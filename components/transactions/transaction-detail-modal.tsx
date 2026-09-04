@@ -19,6 +19,7 @@ interface TransactionDetailModalProps {
   onOpenChange: (open: boolean) => void;
   accounts: Account[];
   categories: Category[];
+  onDataChanged?: () => void;
 }
 
 function EditTransactionForm({
@@ -26,11 +27,13 @@ function EditTransactionForm({
   categories,
   onCancel,
   onSuccess,
+  onDataChanged,
 }: {
   transaction: Transaction;
   categories: Category[];
   onCancel: () => void;
   onSuccess: () => void;
+  onDataChanged?: () => void;
 }) {
   const queryClient = useQueryClient();
   const [editCategoryId, setEditCategoryId] = useState<string>(
@@ -47,6 +50,7 @@ function EditTransactionForm({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["report"] });
+      onDataChanged?.();
       onSuccess();
     },
     onError: (err: unknown) => {
@@ -158,6 +162,7 @@ export function TransactionDetailModal({
   onOpenChange,
   accounts,
   categories,
+  onDataChanged,
 }: TransactionDetailModalProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -170,6 +175,7 @@ export function TransactionDetailModal({
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["report"] });
+      onDataChanged?.();
       onOpenChange(false);
     },
     onError: (err: unknown) => {
@@ -223,6 +229,7 @@ export function TransactionDetailModal({
             setIsEditing(false);
             onOpenChange(false);
           }}
+          onDataChanged={onDataChanged}
         />
       ) : (
         <div className="space-y-4">

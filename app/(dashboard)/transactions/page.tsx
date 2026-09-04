@@ -40,6 +40,7 @@ export default function TransactionsPage() {
   const [txLoading, setTxLoading] = useState(true);
 
   const loadData = React.useCallback(() => {
+    setTxLoading(true);
     Promise.all([
       getTransactions().catch((err) => {
         console.error("Failed to load transactions:", err);
@@ -201,6 +202,7 @@ export default function TransactionsPage() {
           onOpenChange={(open) => !open && setSelectedTransaction(null)}
           accounts={accounts}
           categories={categories}
+          onDataChanged={loadData}
         />
 
         {/* Create Modal */}
@@ -209,6 +211,7 @@ export default function TransactionsPage() {
           onOpenChange={setCreateModalOpen}
           accounts={accounts}
           categories={categories}
+          onDataChanged={loadData}
         />
       </div>
     </PageTransition>

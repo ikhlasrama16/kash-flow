@@ -15,6 +15,7 @@ interface CreateTransactionModalProps {
   onOpenChange: (open: boolean) => void;
   accounts: Account[];
   categories: Category[];
+  onDataChanged?: () => void;
 }
 
 export function CreateTransactionModal({
@@ -22,6 +23,7 @@ export function CreateTransactionModal({
   onOpenChange,
   accounts,
   categories,
+  onDataChanged,
 }: CreateTransactionModalProps) {
   const queryClient = useQueryClient();
 
@@ -42,6 +44,7 @@ export function CreateTransactionModal({
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["report"] });
+      onDataChanged?.();
       onOpenChange(false);
       resetForm();
     },

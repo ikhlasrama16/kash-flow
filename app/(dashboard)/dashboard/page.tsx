@@ -234,12 +234,14 @@ export default function DashboardPage() {
           onOpenChange={setCreateTxOpen}
           accounts={accounts}
           categories={categories}
+          onDataChanged={loadData}
         />
 
         <ReconcileModal
           account={reconcileAccount}
           open={Boolean(reconcileAccount)}
           onOpenChange={(open) => !open && setReconcileAccount(null)}
+          onDataChanged={loadData}
         />
       </div>
     </PageTransition>

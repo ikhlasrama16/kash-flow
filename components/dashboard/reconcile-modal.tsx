@@ -13,9 +13,10 @@ interface ReconcileModalProps {
   account: Account | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDataChanged?: () => void;
 }
 
-export function ReconcileModal({ account, open, onOpenChange }: ReconcileModalProps) {
+export function ReconcileModal({ account, open, onOpenChange, onDataChanged }: ReconcileModalProps) {
   const queryClient = useQueryClient();
   const [actualBalanceStr, setActualBalanceStr] = useState("");
   const [note, setNote] = useState("Penyesuaian saldo riil");
@@ -28,6 +29,7 @@ export function ReconcileModal({ account, open, onOpenChange }: ReconcileModalPr
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["report"] });
+      onDataChanged?.();
       onOpenChange(false);
       setActualBalanceStr("");
       setError(null);
