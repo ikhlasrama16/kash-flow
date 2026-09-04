@@ -104,7 +104,7 @@ export default function DashboardPage() {
     const totals = new Map<string, number>();
 
     for (const tx of filteredTransactions) {
-      if (tx.type === "expense") {
+      if (tx.type === "expense" && tx.source !== "reconcile") {
         const name = tx.category_id ? catMap.get(tx.category_id) || "Lainnya" : "Lainnya";
         totals.set(name, (totals.get(name) || 0) + Number(tx.amount));
       }

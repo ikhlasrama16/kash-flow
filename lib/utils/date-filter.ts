@@ -16,6 +16,10 @@ export interface DateRange {
   label: string;
 }
 
+function isReconciliation(transaction: Transaction): boolean {
+  return transaction.source === "reconcile";
+}
+
 const MONTH_NAMES_ID = [
   "Januari",
   "Februari",
@@ -206,6 +210,7 @@ export function buildTimeSeriesChartData(
       let exp = 0;
       let cnt = 0;
       for (const tx of sorted) {
+        if (isReconciliation(tx)) continue;
         const d = new Date(tx.occurred_at);
         const h = d.getHours();
         if (h >= slot.hStart && h < slot.hEnd) {
@@ -248,6 +253,7 @@ export function buildTimeSeriesChartData(
       let inc = 0;
       let exp = 0;
       for (const tx of dayTransactions) {
+        if (isReconciliation(tx)) continue;
         if (tx.type === "income") inc += Number(tx.amount) || 0;
         if (tx.type === "expense") exp += Number(tx.amount) || 0;
       }
@@ -285,6 +291,7 @@ export function buildTimeSeriesChartData(
     }
 
     for (const tx of sorted) {
+      if (isReconciliation(tx)) continue;
       const d = new Date(tx.occurred_at);
       if (d.getFullYear() === start.getFullYear() && d.getMonth() === start.getMonth()) {
         const dayNum = d.getDate();
@@ -319,6 +326,7 @@ export function buildTimeSeriesChartData(
   // All time: Group by distinct transaction dates or months
   const dateMap = new Map<string, { label: string; inc: number; exp: number; cnt: number }>();
   for (const tx of sorted) {
+    if (isReconciliation(tx)) continue;
     const d = new Date(tx.occurred_at);
     const key = `${d.getDate()}/${d.getMonth() + 1}`;
     const existing = dateMap.get(key);
@@ -357,10 +365,13 @@ export function computeSummaryMetrics(
 ): { summary: ReportSummary; comparison?: ReportComparison } {
   let income = 0;
   let expense = 0;
+  let transactionCount = 0;
   let expenseCount = 0;
   let transferCount = 0;
 
   for (const tx of filteredTransactions) {
+    if (isReconciliation(tx)) continue;
+    transactionCount++;
     const amt = Number(tx.amount) || 0;
     if (tx.type === "income") income += amt;
     else if (tx.type === "expense") {
@@ -381,14 +392,14 @@ export function computeSummaryMetrics(
     const prevRange = getDateRangeForPeriod("last_month");
     const prevTxs = allTransactions.filter((tx) => {
       const t = new Date(tx.occurred_at).getTime();
-      return t >= prevRange.start.getTime() && t <= prevRange.end.getTime() && tx.type === "expense";
+      return t >= prevRange.start.getTime() && t <= prevRange.end.getTime() && tx.type === "expense" && !isReconciliation(tx);
     });
     previous_period_expense = prevTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
   } else if (period === "this_week" || period === "weekly") {
     const prevRange = getDateRangeForPeriod("last_week");
     const prevTxs = allTransactions.filter((tx) => {
       const t = new Date(tx.occurred_at).getTime();
-      return t >= prevRange.start.getTime() && t <= prevRange.end.getTime() && tx.type === "expense";
+      return t >= prevRange.start.getTime() && t <= prevRange.end.getTime() && tx.type === "expense" && !isReconciliation(tx);
     });
     previous_period_expense = prevTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
   }
@@ -409,7 +420,7 @@ export function computeSummaryMetrics(
       income,
       expense,
       net_cashflow: income - expense,
-      transaction_count: filteredTransactions.length,
+      transaction_count: transactionCount,
       expense_transaction_count: expenseCount,
       transfer_count: transferCount,
       average_daily_expense,
