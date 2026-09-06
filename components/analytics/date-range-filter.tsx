@@ -126,7 +126,8 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* 1. Quick Presets & Comparison Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Preset Buttons */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-x-auto max-w-full">
           {PRESET_LABELS.map((item) => {
@@ -139,7 +140,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                 onClick={() => handleSelectPreset(item.key)}
                 className={`relative px-3 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer select-none whitespace-nowrap ${
                   isActive
-                    ? "bg-white dark:bg-[#151c2e] text-slate-900 dark:text-white font-semibold shadow-xs border border-slate-200/60 dark:border-white/10"
+                    ? "bg-white dark:bg-[#151c2e] text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs border border-slate-200/60 dark:border-white/10"
                     : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
@@ -158,7 +159,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <span className="text-slate-400">Vs:</span>
-            <span>
+            <span className="font-semibold text-slate-900 dark:text-white">
               {value.comparison === "previous_equivalent"
                 ? "Periode Setara"
                 : value.comparison === "none"
@@ -169,14 +170,14 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
           </button>
 
           {comparisonDropdownOpen && (
-            <div className="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-[#0e1424] border border-slate-200 dark:border-white/15 p-1 shadow-xl z-50 text-xs">
+            <div className="absolute right-0 mt-1 w-52 rounded-xl bg-white dark:bg-[#0e1424] border border-slate-200 dark:border-white/15 p-1 shadow-xl z-50 text-xs">
               <button
                 type="button"
                 onClick={() => {
                   onChange({ ...value, comparison: "previous_equivalent" });
                   setComparisonDropdownOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                   value.comparison === "previous_equivalent"
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
                     : "hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300"
@@ -191,7 +192,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                   onChange({ ...value, comparison: "none" });
                   setComparisonDropdownOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                   value.comparison === "none"
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
                     : "hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300"
@@ -205,40 +206,56 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
         </div>
       </div>
 
-      {/* Custom Date Inputs (if custom preset active) */}
-      {value.preset === "custom" && (
-        <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/10 text-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
-            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Rentang Tanggal:</span>
+      {/* 2. Direct Date Inputs (Always Visible & Interactive) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/5">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0">
+            <Calendar className="w-4 h-4" />
           </div>
+          <div className="text-xs">
+            <span className="text-slate-500 dark:text-slate-400">Rentang Aktif: </span>
+            <span className="font-semibold text-slate-900 dark:text-white">
+              {formatIDDate(value.startDate)} — {formatIDDate(value.endDate)}
+            </span>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2">
+        {/* Interactive HTML5 Date Pickers */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-slate-400 font-medium">Dari:</span>
             <input
               type="date"
               max={todayMax}
               value={customStart}
+              disabled={disabled}
               onChange={(e) => {
                 setCustomStart(e.target.value);
                 handleApplyCustomDates(e.target.value, customEnd);
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0c111d] text-slate-900 dark:text-white text-xs outline-none focus:ring-1 focus:ring-emerald-500"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
             />
-            <span className="text-slate-400">s/d</span>
+          </div>
+
+          <span className="text-slate-400 text-xs">s/d</span>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-slate-400 font-medium">Sampai:</span>
             <input
               type="date"
               max={todayMax}
               min={customStart}
               value={customEnd}
+              disabled={disabled}
               onChange={(e) => {
                 setCustomEnd(e.target.value);
                 handleApplyCustomDates(customStart, e.target.value);
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0c111d] text-slate-900 dark:text-white text-xs outline-none focus:ring-1 focus:ring-emerald-500"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
             />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
