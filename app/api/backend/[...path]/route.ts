@@ -22,6 +22,11 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
   headers.set("Content-Type", req.headers.get("content-type") || "application/json");
   headers.set("Accept", req.headers.get("accept") || "application/json");
 
+  // Forward incoming browser cookies (e.g. finance_session)
+  if (req.headers.has("cookie")) {
+    headers.set("cookie", req.headers.get("cookie")!);
+  }
+
   // Ingest API key injection for notification ingestion
   if (pathString === "/api/v1/notifications" && req.method === "POST" && process.env.INGEST_API_KEY) {
     headers.set("Authorization", `Bearer ${process.env.INGEST_API_KEY}`);
@@ -49,11 +54,25 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
     const data = await backendResponse.text();
     console.log(`[Proxy] ${req.method} ${pathString} <- Status ${backendResponse.status} (${data.length} bytes)`);
 
+    const responseHeaders = new Headers();
+    responseHeaders.set("Content-Type", backendResponse.headers.get("content-type") || "application/json");
+
+    // Forward Set-Cookie headers back to browser
+    if (typeof backendResponse.headers.getSetCookie === "function") {
+      const setCookies = backendResponse.headers.getSetCookie();
+      for (const cookie of setCookies) {
+        responseHeaders.append("Set-Cookie", cookie);
+      }
+    } else {
+      const setCookie = backendResponse.headers.get("set-cookie");
+      if (setCookie) {
+        responseHeaders.set("Set-Cookie", setCookie);
+      }
+    }
+
     return new NextResponse(data, {
       status: backendResponse.status,
-      headers: {
-        "Content-Type": backendResponse.headers.get("content-type") || "application/json",
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error(`[Proxy Error] Failed to fetch ${targetUrl}:`, error);

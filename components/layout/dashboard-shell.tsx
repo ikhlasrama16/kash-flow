@@ -15,9 +15,11 @@ import {
   Bell,
   Settings,
   TrendingUp,
+  LogOut,
 } from "lucide-react";
 import { AnimatedBackground } from "@/components/react-bits/animated-background";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/providers/auth-provider";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -32,6 +34,7 @@ const NAV_ITEMS = [
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const { logout, user } = useAuth();
 
   return (
     <div className="min-h-screen flex bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 selection:bg-emerald-500/20 selection:text-emerald-400">
@@ -88,8 +91,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        <div className="text-xs text-slate-400 dark:text-slate-500">
-          KashFlow v1.0 • Personal Monitor
+        <div className="pt-4 border-t border-slate-200 dark:border-white/10 space-y-3">
+          {user && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate font-medium">
+              {user.email}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={async () => {
+              setMobileDrawerOpen(false);
+              await logout();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Keluar</span>
+          </button>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500">
+            KashFlow v1.0 • Personal Monitor
+          </div>
         </div>
       </div>
 

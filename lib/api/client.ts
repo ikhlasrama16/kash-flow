@@ -24,24 +24,34 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
+// Global listener for 401 Unauthorized responses
+type UnauthorizedHandler = () => void;
+let globalUnauthorizedHandler: UnauthorizedHandler | null = null;
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
+  globalUnauthorizedHandler = handler;
+}
+
+export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
+  skipAuthRedirect?: boolean;
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const baseUrl = getBaseApiUrl();
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
-  let fullUrl: string;
-  if (baseUrl.startsWith("http")) {
-    const cleanBase = baseUrl.replace(/\/+$/, "");
-    fullUrl = `${cleanBase}${cleanEndpoint}`;
-  } else {
-    const cleanBase = baseUrl.replace(/\/+$/, "");
-    fullUrl = `${cleanBase}${cleanEndpoint}`;
-  }
+  const cleanBase = baseUrl.replace(/\/+$/, "");
+  const fullUrl = `${cleanBase}${cleanEndpoint}`;
 
-  const { timeoutMs = 30000, headers, signal: userSignal, ...restOptions } = options;
+  const {
+    timeoutMs = 30000,
+    headers,
+    signal: userSignal,
+    skipAuthRedirect = false,
+    credentials = "include",
+    ...restOptions
+  } = options;
 
   const controller = new AbortController();
   let timedOut = false;
@@ -59,6 +69,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
   try {
     const response = await fetch(fullUrl, {
       ...restOptions,
+      credentials,
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -73,6 +84,12 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     const data: ApiResponse<T> | T | null = isJson ? await response.json() : null;
 
     if (!response.ok) {
+      if (response.status === 401 && !skipAuthRedirect && typeof window !== "undefined") {
+        if (globalUnauthorizedHandler) {
+          globalUnauthorizedHandler();
+        }
+      }
+
       const errorMessage =
         (data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : null) ||
         `Request failed with status ${response.status}: ${response.statusText}`;
