@@ -18,6 +18,13 @@ interface CreateTransactionModalProps {
   onDataChanged?: () => void;
 }
 
+function getLocalDatetimeString(): string {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60000;
+  const localDate = new Date(now.getTime() - offsetMs);
+  return localDate.toISOString().slice(0, 16);
+}
+
 export function CreateTransactionModal({
   open,
   onOpenChange,
@@ -33,10 +40,16 @@ export function CreateTransactionModal({
   const [destinationAccountId, setDestinationAccountId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [description, setDescription] = useState("");
-  const [occurredAt, setOccurredAt] = useState<string>(
-    new Date().toISOString().slice(0, 16)
-  );
+  const [occurredAt, setOccurredAt] = useState<string>(getLocalDatetimeString);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync occurredAt to exact current local time every time modal is opened
+  React.useEffect(() => {
+    if (open) {
+      setOccurredAt(getLocalDatetimeString());
+      setError(null);
+    }
+  }, [open]);
 
   const mutation = useMutation({
     mutationFn: createTransaction,
@@ -60,7 +73,7 @@ export function CreateTransactionModal({
     setSourceAccountId("");
     setDestinationAccountId("");
     setCategoryId("");
-    setOccurredAt(new Date().toISOString().slice(0, 16));
+    setOccurredAt(getLocalDatetimeString());
   };
 
   const filteredCategories = categories.filter((c) => c.type === type);
