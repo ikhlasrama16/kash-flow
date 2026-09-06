@@ -56,9 +56,9 @@ export function CashflowChart({
   const hasData = income > 0 || expense > 0 || data.some((d) => d.Pemasukan > 0 || d.Pengeluaran > 0);
 
   return (
-    <Card className="border-slate-200/80 dark:border-white/10 relative overflow-hidden backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-md">
-      {/* Background glow decoration */}
-      <div className="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
+    <Card className="border-slate-200/80 dark:border-white/10 relative overflow-hidden bg-white dark:bg-[#0c111d] shadow-xs">
+      {/* Background glow decoration - optimized without blur */}
+      <div className="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.12)_0%,transparent_70%)]" />
 
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 gap-3">
         <div>

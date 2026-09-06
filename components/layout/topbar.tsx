@@ -47,7 +47,7 @@ export function Topbar({ onToggleMobileNav, mobileNavOpen }: { onToggleMobileNav
   )?.[1] || "Dashboard";
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#090d16]/80 px-4 md:px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#090d16] md:bg-white/80 md:dark:bg-[#090d16]/80 px-4 md:px-8 md:backdrop-blur-md">
       <div className="flex items-center gap-3">
         {/* Mobile toggle */}
         <button

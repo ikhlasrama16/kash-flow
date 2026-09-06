@@ -3,16 +3,29 @@
 import React, { useState, useMemo } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/react-bits/page-transition";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
-import { CashflowChart } from "@/components/dashboard/cashflow-chart";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 import { AccountCards } from "@/components/dashboard/account-cards";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { CreateTransactionModal } from "@/components/dashboard/create-transaction-modal";
 import { ReconcileModal } from "@/components/dashboard/reconcile-modal";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
+
+const CashflowChart = dynamic(
+  () => import("@/components/dashboard/cashflow-chart").then((mod) => mod.CashflowChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[380px] w-full rounded-2xl bg-white dark:bg-[#0c111d] border border-slate-200/80 dark:border-white/10 p-6 flex flex-col items-center justify-center animate-pulse">
+        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
+        <span className="text-xs text-slate-400">Memuat grafik arus kas...</span>
+      </div>
+    ),
+  }
+);
 import { getAccounts } from "@/lib/api/accounts";
 import { getTransactions } from "@/lib/api/transactions";
 import { getCategories } from "@/lib/api/categories";
@@ -145,7 +158,7 @@ export default function DashboardPage() {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              className="text-xs backdrop-blur-sm bg-white/80 dark:bg-white/5 cursor-pointer"
+              className="text-xs bg-white dark:bg-white/5 cursor-pointer"
               title="Perbarui data"
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1" />
@@ -168,7 +181,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white/70 dark:bg-[#0c111d]/70 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs relative z-30"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#0c111d] border border-slate-200/80 dark:border-white/10 shadow-xs relative z-30"
         >
           <div className="text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

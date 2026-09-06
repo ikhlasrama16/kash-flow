@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -15,41 +15,36 @@ export function SpotlightCard({
   ...props
 }: SpotlightCardProps) {
   const divRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!divRef.current) return;
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current || !overlayRef.current) return;
     const rect = divRef.current.getBoundingClientRect();
-    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, []);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    overlayRef.current.style.opacity = "1";
+    overlayRef.current.style.background = `radial-gradient(350px circle at ${x}px ${y}px, ${spotlightColor}, transparent 70%)`;
+  };
 
-  const handleMouseEnter = useCallback(() => {
-    setOpacity(1);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setOpacity(0);
-  }, []);
+  const handleMouseLeave = () => {
+    if (!overlayRef.current) return;
+    overlayRef.current.style.opacity = "0";
+  };
 
   return (
     <div
       ref={divRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0e1422] p-6 text-slate-900 dark:text-slate-100 shadow-sm transition-all duration-300 overflow-hidden",
+        "relative rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0e1422] p-6 text-slate-900 dark:text-slate-100 shadow-xs transition-all duration-200 overflow-hidden",
         className
       )}
       {...props}
     >
       <div
-        className="pointer-events-none absolute -inset-px transition-opacity duration-300 rounded-2xl"
-        style={{
-          opacity,
-          background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 70%)`,
-        }}
+        ref={overlayRef}
+        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 rounded-2xl hidden md:block"
       />
       <div className="relative z-10">{children}</div>
     </div>

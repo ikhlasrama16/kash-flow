@@ -75,15 +75,26 @@ body {
   background: rgba(148, 163, 184, 0.4);
 }
 
-/* Glassmorphism helpers */
+/* Fintech panel helpers - Optimized for mobile GPU */
 .glass-panel {
-  background: rgba(15, 21, 35, 0.7);
-  backdrop-filter: blur(12px);
+  background: rgba(15, 21, 35, 0.95);
   border: 1px solid var(--border);
 }
 
 .light .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid var(--border);
+}
+
+@supports (backdrop-filter: blur(8px)) {
+  @media (min-width: 768px) {
+    .glass-panel {
+      background: rgba(15, 21, 35, 0.82);
+      backdrop-filter: blur(8px);
+    }
+    .light .glass-panel {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+    }
+  }
 }

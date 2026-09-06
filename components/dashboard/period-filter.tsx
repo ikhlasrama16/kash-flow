@@ -46,7 +46,7 @@ export function PeriodFilter({
   return (
     <div className="flex flex-wrap items-center gap-2 relative z-40">
       {/* 1. Quick Presets Bar */}
-      <div className="flex items-center gap-1 bg-slate-100/90 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 backdrop-blur-md overflow-x-auto max-w-full">
+      <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-x-auto max-w-full">
         {PRESET_OPTIONS.map((opt) => {
           const isActive = selectedPeriod === opt.value;
           return (
@@ -78,10 +78,10 @@ export function PeriodFilter({
         <button
           type="button"
           onClick={() => setDropdownOpen((prev) => !prev)}
-          className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-2xl border transition-all cursor-pointer backdrop-blur-md ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-2xl border transition-all cursor-pointer ${
             isCustomMonth
               ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs"
-              : "bg-slate-100/90 dark:bg-white/5 border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10"
+              : "bg-slate-100 dark:bg-white/5 border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10"
           }`}
         >
           <Calendar className="w-3.5 h-3.5" />

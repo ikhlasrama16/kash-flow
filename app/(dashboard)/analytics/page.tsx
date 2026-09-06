@@ -99,7 +99,7 @@ export function AnalyticsPage() {
 
           <div className="flex items-center gap-2">
             {/* Period Selector */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 backdrop-blur-md">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10">
               {PERIOD_OPTIONS.map((opt) => {
                 const isActive = period === opt.value;
                 return (
@@ -132,7 +132,7 @@ export function AnalyticsPage() {
               size="sm"
               onClick={() => refetch()}
               disabled={isGenerating}
-              className="text-xs rounded-xl backdrop-blur-sm bg-white/80 dark:bg-white/5 cursor-pointer"
+              className="text-xs rounded-xl bg-white dark:bg-white/5 cursor-pointer"
               title="Generate ulang analisis"
             >
               <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isGenerating ? "animate-spin" : ""}`} />
@@ -146,7 +146,7 @@ export function AnalyticsPage() {
           {/* Income */}
           <SpotlightCard
             spotlightColor="rgba(16, 185, 129, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm"
+            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -167,7 +167,7 @@ export function AnalyticsPage() {
           {/* Expense */}
           <SpotlightCard
             spotlightColor="rgba(244, 63, 94, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm"
+            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -189,7 +189,7 @@ export function AnalyticsPage() {
           {/* Daily Average Expense */}
           <SpotlightCard
             spotlightColor="rgba(245, 158, 11, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm"
+            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -208,7 +208,7 @@ export function AnalyticsPage() {
           {/* Net Cashflow */}
           <SpotlightCard
             spotlightColor="rgba(59, 130, 246, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm"
+            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -237,9 +237,9 @@ export function AnalyticsPage() {
         </div>
 
         {/* 2. AI Financial Report / Insights */}
-        <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.04] via-teal-500/[0.02] to-transparent relative overflow-hidden backdrop-blur-xs shadow-md">
+        <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.04] via-teal-500/[0.02] to-transparent relative overflow-hidden shadow-xs">
           {/* Subtle glowing orb */}
-          <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-emerald-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.15)_0%,transparent_70%)]" />
 
           <CardHeader className="flex flex-row items-center justify-between pb-3 gap-3">
             <div className="flex items-center gap-3">
@@ -338,7 +338,7 @@ export function AnalyticsPage() {
         {/* 3. Charts & Merchants Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Category Pie Chart */}
-          <Card className="border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-md">
+          <Card className="border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Distribusi Kategori Belanja</CardTitle>
@@ -389,7 +389,7 @@ export function AnalyticsPage() {
           </Card>
 
           {/* Top Merchants List */}
-          <Card className="border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-md">
+          <Card className="border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs">
             <CardHeader>
               <CardTitle className="text-base">Top Penerima / Merchant</CardTitle>
               <CardDescription className="text-xs">Penerima transaksi belanja terbesar</CardDescription>

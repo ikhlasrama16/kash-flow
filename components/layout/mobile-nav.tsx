@@ -26,7 +26,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-md px-2 py-1.5 shadow-lg safe-area-inset-bottom">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#090d16] px-2 py-1.5 shadow-lg safe-area-inset-bottom">
       <nav className="flex items-center justify-around">
         {MOBILE_TABS.map((item) => {
           const isActive =

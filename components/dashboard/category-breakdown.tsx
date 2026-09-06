@@ -26,7 +26,7 @@ const CATEGORY_COLORS = [
 
 export function CategoryBreakdown({ categories, periodLabel, isLoading }: CategoryBreakdownProps) {
   return (
-    <Card className="border-slate-200/80 dark:border-white/10 h-full relative overflow-hidden backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-md">
+    <Card className="border-slate-200/80 dark:border-white/10 h-full relative overflow-hidden bg-white dark:bg-[#0c111d] shadow-xs">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base md:text-lg">Distribusi Pengeluaran</CardTitle>

@@ -48,7 +48,7 @@ export function SummaryCards({ accounts, summary, comparison, periodLabel }: Sum
       <motion.div custom={0} initial="hidden" animate="visible" variants={cardVariants}>
         <SpotlightCard
           spotlightColor="rgba(16, 185, 129, 0.18)"
-          className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all group"
+          className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs hover:border-emerald-500/30 transition-colors group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -73,7 +73,7 @@ export function SummaryCards({ accounts, summary, comparison, periodLabel }: Sum
       <motion.div custom={1} initial="hidden" animate="visible" variants={cardVariants}>
         <SpotlightCard
           spotlightColor="rgba(16, 185, 129, 0.15)"
-          className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all group"
+          className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs hover:border-emerald-500/30 transition-colors group"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
@@ -103,7 +103,7 @@ export function SummaryCards({ accounts, summary, comparison, periodLabel }: Sum
       <motion.div custom={2} initial="hidden" animate="visible" variants={cardVariants}>
         <SpotlightCard
           spotlightColor="rgba(244, 63, 94, 0.15)"
-          className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm hover:shadow-md hover:border-rose-500/30 transition-all group"
+          className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs hover:border-rose-500/30 transition-colors group"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
@@ -148,7 +148,7 @@ export function SummaryCards({ accounts, summary, comparison, periodLabel }: Sum
       <motion.div custom={3} initial="hidden" animate="visible" variants={cardVariants}>
         <SpotlightCard
           spotlightColor="rgba(6, 182, 212, 0.15)"
-          className="p-5 border-slate-200/80 dark:border-white/10 backdrop-blur-xs bg-white/90 dark:bg-[#0c111d]/90 shadow-sm hover:shadow-md hover:border-cyan-500/30 transition-all group"
+          className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs hover:border-cyan-500/30 transition-colors group"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
