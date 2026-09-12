@@ -14,6 +14,7 @@ import { CreateTransactionModal } from "@/components/dashboard/create-transactio
 import { getTransactions } from "@/lib/api/transactions";
 import { getAccounts } from "@/lib/api/accounts";
 import { getCategories } from "@/lib/api/categories";
+import { isDateInDateRange } from "@/lib/utils/date-filter";
 import { Transaction } from "@/types/transaction";
 import { Account } from "@/types/account";
 import { Category } from "@/types/category";
@@ -27,6 +28,9 @@ export default function TransactionsPage() {
     accountId: "",
     categoryId: "",
     parseStatus: "",
+    startDate: "",
+    endDate: "",
+    datePreset: "all",
   });
 
   const [page, setPage] = useState(1);
@@ -100,6 +104,11 @@ export default function TransactionsPage() {
 
       // Parse status
       if (filters.parseStatus && tx.parse_status !== filters.parseStatus) {
+        return false;
+      }
+
+      // Date Range
+      if (!isDateInDateRange(tx.occurred_at, filters.startDate, filters.endDate)) {
         return false;
       }
 

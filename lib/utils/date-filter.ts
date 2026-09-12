@@ -10,6 +10,87 @@ export type TimePeriod =
   | "all_time"
   | `month_${string}`; // e.g. month_2026-08
 
+export type DatePresetKey = "all" | "today" | "yesterday" | "this_week" | "this_month" | "custom";
+
+export function getJakartaDateString(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+export function formatIDDate(dateStr: string): string {
+  if (!dateStr) return "-";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+
+export function getPresetDates(preset: DatePresetKey): { startDate: string; endDate: string } {
+  const now = new Date();
+  const todayStr = getJakartaDateString(now);
+
+  if (preset === "all") {
+    return { startDate: "", endDate: "" };
+  }
+
+  if (preset === "today") {
+    return { startDate: todayStr, endDate: todayStr };
+  }
+
+  if (preset === "yesterday") {
+    const yest = new Date(now);
+    yest.setDate(now.getDate() - 1);
+    const yestStr = getJakartaDateString(yest);
+    return { startDate: yestStr, endDate: yestStr };
+  }
+
+  if (preset === "this_week") {
+    const day = now.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    return { startDate: getJakartaDateString(monday), endDate: todayStr };
+  }
+
+  if (preset === "this_month") {
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startDate: getJakartaDateString(firstOfMonth), endDate: todayStr };
+  }
+
+  return { startDate: "", endDate: "" };
+}
+
+export function isDateInDateRange(
+  dateInput: string | Date | null | undefined,
+  startDate?: string,
+  endDate?: string
+): boolean {
+  if (!dateInput) return false;
+  if (!startDate && !endDate) return true;
+
+  const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  if (isNaN(d.getTime())) return false;
+
+  const dateStr = getJakartaDateString(d);
+
+  if (startDate && dateStr < startDate) {
+    return false;
+  }
+  if (endDate && dateStr > endDate) {
+    return false;
+  }
+
+  return true;
+}
+
 export interface DateRange {
   start: Date;
   end: Date;
