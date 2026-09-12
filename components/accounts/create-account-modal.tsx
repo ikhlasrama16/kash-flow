@@ -11,9 +11,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 interface CreateAccountModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDataChanged?: () => void;
 }
 
-export function CreateAccountModal({ open, onOpenChange }: CreateAccountModalProps) {
+export function CreateAccountModal({ open, onOpenChange, onDataChanged }: CreateAccountModalProps) {
   const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
@@ -27,6 +28,7 @@ export function CreateAccountModal({ open, onOpenChange }: CreateAccountModalPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["report"] });
+      onDataChanged?.();
       onOpenChange(false);
       resetForm();
     },

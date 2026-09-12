@@ -181,11 +181,16 @@ export default function AccountsPage() {
         </div>
 
         {/* Modals */}
-        <CreateAccountModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
+        <CreateAccountModal
+          open={createModalOpen}
+          onOpenChange={setCreateModalOpen}
+          onDataChanged={loadAccounts}
+        />
         <ReconcileModal
           account={reconcileTarget}
           open={Boolean(reconcileTarget)}
           onOpenChange={(open) => !open && setReconcileTarget(null)}
+          onDataChanged={loadAccounts}
         />
       </div>
     </PageTransition>
