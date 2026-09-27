@@ -1,132 +1,76 @@
 "use client";
-
-import React, { useState } from "react";
+import { useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { X, LogOut } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { MobileNav } from "./mobile-nav";
-import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  Wallet,
-  Tag,
-  BarChart3,
-  Bell,
-  Settings,
-  TrendingUp,
-  LogOut,
-} from "lucide-react";
-import { AnimatedBackground } from "@/components/react-bits/animated-background";
-import { cn } from "@/lib/utils";
+import { navigation } from "./navigation";
 import { useAuth } from "@/components/providers/auth-provider";
-
-const NAV_ITEMS = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Transactions", href: "/transactions", icon: ArrowLeftRight },
-  { name: "Accounts", href: "/accounts", icon: Wallet },
-  { name: "Categories", href: "/categories", icon: Tag },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Notifications", href: "/notifications", icon: Bell },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
-
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const drawer = useRef<HTMLDialogElement>(null);
   const pathname = usePathname();
-  const { logout, user } = useAuth();
-
+  const { logout } = useAuth();
+  useEffect(() => {
+    drawer.current?.close();
+  }, [pathname]);
   return (
-    <div className="min-h-screen flex bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 selection:bg-emerald-500/20 selection:text-emerald-400">
-      {/* Desktop Sidebar */}
+    <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Langsung ke konten
+      </a>
       <Sidebar />
-
-      {/* Mobile Drawer Backdrop */}
-      {mobileDrawerOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity"
-          onClick={() => setMobileDrawerOpen(false)}
-        />
-      )}
-
-      {/* Mobile Slide-in Drawer */}
-      <div
-        className={cn(
-          "lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-[#0c111d] border-r border-slate-200 dark:border-white/10 p-6 flex flex-col justify-between transition-transform duration-300 ease-in-out shadow-2xl",
-          mobileDrawerOpen ? "translate-x-0" : "-translate-x-full"
-        )}
+      <div className="app-body">
+        <Topbar onToggleMobileNav={() => drawer.current?.showModal()} />
+        <main id="main-content" className="app-main">
+          {children}
+        </main>
+      </div>
+      <MobileNav />
+      <dialog
+        ref={drawer}
+        className="navigation-dialog"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) drawer.current?.close();
+        }}
       >
-        <div>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-sm">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div className="font-bold text-base tracking-tight">
-              Kash<span className="text-emerald-500">Flow</span>
-            </div>
-          </div>
-
-          <nav className="space-y-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive =
-                pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileDrawerOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-emerald-500/10 text-emerald-500 font-semibold"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="pt-4 border-t border-slate-200 dark:border-white/10 space-y-3">
-          {user && (
-            <div className="text-xs text-slate-500 dark:text-slate-400 truncate font-medium">
-              {user.email}
-            </div>
-          )}
+        <div className="navigation-dialog-header">
+          <strong>Semua menu</strong>
           <button
             type="button"
-            onClick={async () => {
-              setMobileDrawerOpen(false);
-              await logout();
-            }}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
+            className="icon-button"
+            onClick={() => drawer.current?.close()}
+            aria-label="Tutup menu"
           >
-            <LogOut className="w-4 h-4" />
-            <span>Keluar</span>
+            <X />
           </button>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500">
-            KashFlow v1.0 • Personal Monitor
-          </div>
         </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8 relative">
-        <Topbar
-          onToggleMobileNav={() => setMobileDrawerOpen((prev) => !prev)}
-          mobileNavOpen={mobileDrawerOpen}
-        />
-        <AnimatedBackground>
-          <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto relative z-10">{children}</main>
-        </AnimatedBackground>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileNav />
+        <nav className="sidebar-links" aria-label="Semua halaman">
+          {navigation.map(({ name, href, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => drawer.current?.close()}
+              aria-current={pathname.startsWith(href) ? "page" : undefined}
+            >
+              <Icon aria-hidden="true" />
+              {name}
+            </Link>
+          ))}
+        </nav>
+        <button
+          className="text-action"
+          type="button"
+          onClick={() => {
+            drawer.current?.close();
+            void logout();
+          }}
+        >
+          <LogOut size={18} />
+          Keluar dari akun
+        </button>
+      </dialog>
     </div>
   );
 }

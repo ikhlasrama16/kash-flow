@@ -10,42 +10,61 @@ interface DialogProps {
   children: React.ReactNode;
 }
 
+const DialogTitleId = React.createContext<string | undefined>(undefined);
+
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
+  const dialog = React.useRef<HTMLDialogElement>(null);
+  const titleId = React.useId();
   React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) {
-        onOpenChange(false);
-      }
-    };
+    const element = dialog.current;
+    const previousOverflow = document.body.style.overflow;
     if (open) {
+      element?.showModal();
       document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
     } else {
-      document.body.style.overflow = "";
+      element?.close();
     }
     return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      element?.close();
     };
-  }, [open, onOpenChange]);
-
-  if (!open) return null;
+  }, [open]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-200"
-        onClick={() => onOpenChange(false)}
-      />
-      <div className="relative z-50 w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0e1422] p-6 text-slate-900 dark:text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-        {children}
-      </div>
-    </div>
+    <DialogTitleId.Provider value={titleId}>
+      <dialog
+        ref={dialog}
+        aria-labelledby={titleId}
+        className="app-dialog"
+        onCancel={() => onOpenChange(false)}
+        onClick={(event) => {
+          if (event.target !== event.currentTarget) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (
+            event.clientX < rect.left ||
+            event.clientX > rect.right ||
+            event.clientY < rect.top ||
+            event.clientY > rect.bottom
+          )
+            onOpenChange(false);
+        }}
+      >
+        {open ? children : null}
+      </dialog>
+    </DialogTitleId.Provider>
   );
 }
 
-export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col space-y-1.5 pb-4", className)} {...props} />;
+export function DialogHeader({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("flex flex-col space-y-1.5 pb-4", className)}
+      {...props}
+    />
+  );
 }
 
 export function DialogTitle({
@@ -54,16 +73,25 @@ export function DialogTitle({
   onClose,
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement> & { onClose?: () => void }) {
+  const titleId = React.useContext(DialogTitleId);
   return (
     <div className="flex items-center justify-between">
-      <h2 className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props}>
+      <h2
+        id={titleId}
+        className={cn(
+          "text-lg font-semibold leading-none tracking-tight",
+          className,
+        )}
+        {...props}
+      >
         {children}
       </h2>
       {onClose && (
         <button
           type="button"
+          aria-label="Tutup dialog"
           onClick={onClose}
-          className="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          className="icon-button"
         >
           <X className="w-5 h-5" />
         </button>
@@ -72,14 +100,28 @@ export function DialogTitle({
   );
 }
 
-export function DialogDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-slate-500 dark:text-slate-400", className)} {...props} />;
+export function DialogDescription({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p
+      className={cn("text-sm text-slate-500 dark:text-slate-400", className)}
+      {...props}
+    />
+  );
 }
 
-export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function DialogFooter({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 gap-2", className)}
+      className={cn(
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 gap-2",
+        className,
+      )}
       {...props}
     />
   );

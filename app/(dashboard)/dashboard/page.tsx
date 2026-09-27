@@ -1,262 +1,443 @@
 "use client";
-
-import React, { useState, useMemo } from "react";
-import { Plus, RefreshCw } from "lucide-react";
-import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
-import { Button } from "@/components/ui/button";
-import { PageTransition } from "@/components/react-bits/page-transition";
-import { SummaryCards } from "@/components/dashboard/summary-cards";
-import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
-import { AccountCards } from "@/components/dashboard/account-cards";
-import { RecentTransactions } from "@/components/dashboard/recent-transactions";
-import { CreateTransactionModal } from "@/components/dashboard/create-transaction-modal";
-import { ReconcileModal } from "@/components/dashboard/reconcile-modal";
-import { PeriodFilter } from "@/components/dashboard/period-filter";
-
-const CashflowChart = dynamic(
-  () => import("@/components/dashboard/cashflow-chart").then((mod) => mod.CashflowChart),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[380px] w-full rounded-2xl bg-white dark:bg-[#0c111d] border border-slate-200/80 dark:border-white/10 p-6 flex flex-col items-center justify-center animate-pulse">
-        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
-        <span className="text-xs text-slate-400">Memuat grafik arus kas...</span>
-      </div>
-    ),
-  }
-);
+import { useState } from "react";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Plus,
+  RefreshCw,
+  ChevronRight,
+  ArrowRight,
+  Landmark,
+  Wallet,
+  Banknote,
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ShoppingBag,
+  SlidersHorizontal,
+} from "lucide-react";
 import { getAccounts } from "@/lib/api/accounts";
 import { getTransactions } from "@/lib/api/transactions";
 import { getCategories } from "@/lib/api/categories";
-import { Account } from "@/types/account";
-import { Transaction } from "@/types/transaction";
-import { Category } from "@/types/category";
+import { formatIDR, formatDate } from "@/lib/utils";
 import {
   filterTransactionsByPeriod,
   getAvailableMonths,
-  buildTimeSeriesChartData,
-  computeSummaryMetrics,
   getDateRangeForPeriod,
+  computeSummaryMetrics,
 } from "@/lib/utils/date-filter";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 4 && hour < 11) return "Selamat pagi 🌅";
-  if (hour >= 11 && hour < 15) return "Selamat siang ☀️";
-  if (hour >= 15 && hour < 18) return "Selamat sore 🌇";
-  return "Selamat malam 🌙";
-}
+import { CreateTransactionModal } from "@/components/dashboard/create-transaction-modal";
+import { ReconcileModal } from "@/components/dashboard/reconcile-modal";
+import { Account } from "@/types/account";
 
 export default function DashboardPage() {
-  const [period, setPeriod] = useState<string>("this_month");
-  const [createTxOpen, setCreateTxOpen] = useState(false);
-  const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
-
-  // Native state with immediate useEffect fetch
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(true);
-  const [transactionsLoading, setTransactionsLoading] = useState(true);
-
-  const loadData = React.useCallback(() => {
-    setAccountsLoading(true);
-    setTransactionsLoading(true);
-
-    Promise.all([
-      getAccounts().catch(() => [] as Account[]),
-      getTransactions().catch(() => [] as Transaction[]),
-      getCategories().catch(() => [] as Category[]),
-    ]).then(([accs, txs, cats]) => {
-      setAccounts(accs);
-      setTransactions(txs);
-      setCategories(cats);
-      setAccountsLoading(false);
-      setTransactionsLoading(false);
-    });
-  }, []);
-
-  React.useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleRefresh = () => {
-    loadData();
+  const [period, setPeriod] = useState("this_month");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [reconcile, setReconcile] = useState<Account | null>(null);
+  const accountsQuery = useQuery({
+    queryKey: ["accounts"],
+    queryFn: getAccounts,
+  });
+  const transactionsQuery = useQuery({
+    queryKey: ["transactions"],
+    queryFn: getTransactions,
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+  const accounts = accountsQuery.data ?? [];
+  const transactions = transactionsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const activeAccounts = accounts.filter((account) => account.is_active);
+  const balance = activeAccounts.reduce(
+    (sum, account) => sum + Number(account.balance || 0),
+    0,
+  );
+  const filtered = filterTransactionsByPeriod(transactions, period);
+  const recent = [...filtered]
+    .sort(
+      (a, b) =>
+        new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
+    )
+    .slice(0, 5);
+  const { summary } = computeSummaryMetrics(filtered, transactions, period);
+  const months = getAvailableMonths(transactions);
+  const { label } = getDateRangeForPeriod(period);
+  const maxAmount = Math.max(summary.income, summary.expense, 1);
+  const loading = accountsQuery.isPending || transactionsQuery.isPending;
+  const failed =
+    accountsQuery.isError ||
+    transactionsQuery.isError ||
+    categoriesQuery.isError;
+  const refreshing =
+    accountsQuery.isFetching ||
+    transactionsQuery.isFetching ||
+    categoriesQuery.isFetching;
+  const refresh = () => {
+    void accountsQuery.refetch();
+    void transactionsQuery.refetch();
+    void categoriesQuery.refetch();
   };
-
-  // Extract available months from transactions
-  const availableMonths = useMemo(() => {
-    return getAvailableMonths(transactions);
-  }, [transactions]);
-
-  // If user is on default "this_month" and has 0 transactions this month,
-  // but has transactions in previous month, we can let user easily toggle or see label
-  const { label: activePeriodLabel } = useMemo(() => {
-    return getDateRangeForPeriod(period);
-  }, [period]);
-
-  // Filter transactions according to selected period
-  const filteredTransactions = useMemo(() => {
-    return filterTransactionsByPeriod(transactions, period);
-  }, [transactions, period]);
-
-  // Time-series chart points (line/area/bar data)
-  const chartData = useMemo(() => {
-    return buildTimeSeriesChartData(filteredTransactions, period);
-  }, [filteredTransactions, period]);
-
-  // Calculate summary metrics (Income, Expense, Net, Comparison)
-  const { summary: activeSummary, comparison } = useMemo(() => {
-    return computeSummaryMetrics(filteredTransactions, transactions, period);
-  }, [filteredTransactions, transactions, period]);
-
-  // Calculate top categories for the filtered transactions
-  const activeCategories = useMemo(() => {
-    const catMap = new Map(categories.map((c) => [c.id, c.name]));
-    const totals = new Map<string, number>();
-
-    for (const tx of filteredTransactions) {
-      if (tx.type === "expense" && tx.source !== "reconcile") {
-        const name = tx.category_id ? catMap.get(tx.category_id) || "Lainnya" : "Lainnya";
-        totals.set(name, (totals.get(name) || 0) + Number(tx.amount));
+  const accountName = (id?: number | null) =>
+    accounts.find((account) => account.id === id)?.name || "Rekening";
+  const today = new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
+  const createAction = (
+    <button
+      className="text-action create-action"
+      type="button"
+      onClick={() => setCreateOpen(true)}
+      disabled={
+        accountsQuery.isPending ||
+        accountsQuery.isError ||
+        categoriesQuery.isPending ||
+        categoriesQuery.isError
       }
-    }
-
-    const totalExp = Array.from(totals.values()).reduce((a, b) => a + b, 0);
-    const result: { category: string; amount: number; percentage: number }[] = [];
-    for (const [category, amount] of totals.entries()) {
-      result.push({
-        category,
-        amount,
-        percentage: totalExp > 0 ? (amount / totalExp) * 100 : 0,
-      });
-    }
-    return result.sort((a, b) => b.amount - a.amount).slice(0, 6);
-  }, [filteredTransactions, categories]);
-
+    >
+      <span className="plus-circle">
+        <Plus size={22} />
+      </span>
+      Catat transaksi
+    </button>
+  );
   return (
-    <PageTransition>
-      <div className="space-y-6 md:space-y-8">
-        {/* Header with Greeting & Action Buttons */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-              <span>{getGreeting()}</span>
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Berikut ringkasan kondisi keuangan & arus kas Anda untuk periode{" "}
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                {activePeriodLabel}
-              </span>
-              .
+    <div className="overview">
+      <header className="overview-header">
+        <div>
+          <p className="overview-date" suppressHydrationWarning>
+            {today}
+          </p>
+          <h1>Ringkasan</h1>
+        </div>
+        <div className="overview-actions">
+          <div className="desktop-create">{createAction}</div>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={refresh}
+            disabled={refreshing}
+            aria-label="Muat ulang data"
+          >
+            <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
+          </button>
+        </div>
+      </header>
+      {failed && (
+        <div role="alert" className="overview-error">
+          Sebagian data belum berhasil dimuat. Data yang tersedia tetap
+          ditampilkan.
+          <button type="button" onClick={refresh} disabled={refreshing}>
+            Coba lagi
+          </button>
+        </div>
+      )}
+      <div className="overview-grid">
+        <section className="balance-section" aria-label="Saldo rekening">
+          <p className="section-caption">Saldo tersedia</p>
+          {accountsQuery.isPending ? (
+            <div
+              className="balance-skeleton skeleton-block"
+              aria-label="Memuat saldo"
+            />
+          ) : (
+            <p className="balance-value">
+              {accountsQuery.isError && !accountsQuery.data
+                ? "—"
+                : formatIDR(balance).replace("Rp ", "Rp")}
             </p>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              className="text-xs bg-white dark:bg-white/5 cursor-pointer"
-              title="Perbarui data"
-            >
-              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-              <span>Muat Ulang</span>
-            </Button>
-            <Button
-              variant="emerald"
-              size="sm"
-              onClick={() => setCreateTxOpen(true)}
-              className="text-xs font-semibold shadow-lg shadow-emerald-500/25 cursor-pointer hover:shadow-emerald-500/40 transition-all"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              <span>Catat Transaksi</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Period & Month Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#0c111d] border border-slate-200/80 dark:border-white/10 shadow-xs relative z-30"
+          )}
+          <p className="balance-note">
+            {accountsQuery.isError && !accountsQuery.data
+              ? "Saldo belum tersedia"
+              : `Tersebar di ${activeAccounts.length} rekening aktif`}
+          </p>
+          <Link className="text-action balance-link" href="/accounts">
+            Lihat rekening <ChevronRight size={17} />
+          </Link>
+        </section>
+        <section
+          className="monthly-panel surface"
+          aria-label="Ringkasan periode"
         >
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Filter Periode Transaksi:</span>
+          <div className="monthly-heading">
+            <label className="sr-only" htmlFor="overview-period">
+              Periode transaksi
+            </label>
+            <select
+              id="overview-period"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+            >
+              <optgroup label="Periode">
+                <option value="this_month">
+                  {getDateRangeForPeriod("this_month").label}
+                </option>
+                <option value="last_month">Bulan lalu</option>
+                <option value="today">Hari ini</option>
+                <option value="this_week">Minggu ini</option>
+                <option value="last_week">Minggu lalu</option>
+                <option value="all_time">Semua waktu</option>
+              </optgroup>
+              {months.length > 0 && (
+                <optgroup label="Riwayat bulanan">
+                  {months.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
           </div>
-
-          <PeriodFilter
-            selectedPeriod={period}
-            onSelectPeriod={(p) => setPeriod(p)}
-            availableMonths={availableMonths}
-            activeLabel={activePeriodLabel}
-          />
-        </motion.div>
-
-        {/* 1. Summary Stat Cards */}
-        <SummaryCards
-          accounts={accounts}
-          summary={activeSummary}
-          comparison={comparison}
-          periodLabel={activePeriodLabel}
-        />
-
-        {/* 2. Charts Section (Cashflow Area/Line Chart + Categories Breakdown) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <CashflowChart
-              data={chartData}
-              income={activeSummary.income}
-              expense={activeSummary.expense}
-              netCashflow={activeSummary.net_cashflow}
-              periodLabel={activePeriodLabel}
-              isLoading={transactionsLoading}
-            />
+          {transactionsQuery.isPending ? (
+            <div
+              className="monthly-loading"
+              role="status"
+              aria-label="Memuat ringkasan"
+            >
+              <div className="skeleton-block" />
+              <div className="skeleton-block" />
+            </div>
+          ) : transactionsQuery.isError && !transactionsQuery.data ? (
+            <p className="empty-state">
+              Ringkasan belum tersedia. Coba muat ulang.
+            </p>
+          ) : (
+            <>
+              <div className="comparison-row">
+                <div>
+                  <span>Masuk</span>
+                  <strong>{formatIDR(summary.income)}</strong>
+                </div>
+                <div className="comparison-track" aria-hidden="true">
+                  <span
+                    className="income-bar"
+                    style={{ width: `${(summary.income / maxAmount) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <div className="comparison-row">
+                <div>
+                  <span>Keluar</span>
+                  <strong>{formatIDR(summary.expense)}</strong>
+                </div>
+                <div className="comparison-track" aria-hidden="true">
+                  <span
+                    className="expense-bar"
+                    style={{ width: `${(summary.expense / maxAmount) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <div className="cashflow-note">
+                <span
+                  className={
+                    summary.net_cashflow < 0
+                      ? "cashflow-dot expense-bar"
+                      : "cashflow-dot income-bar"
+                  }
+                />
+                <div>
+                  <p>
+                    {summary.net_cashflow < 0
+                      ? "Pengeluaran lebih besar"
+                      : summary.net_cashflow > 0
+                        ? "Pemasukan lebih besar"
+                        : "Pemasukan dan pengeluaran seimbang"}
+                  </p>
+                  <strong>{formatIDR(Math.abs(summary.net_cashflow))}</strong>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+        <div className="mobile-create">{createAction}</div>
+        <section className="activity-section">
+          <div className="section-heading">
+            <h2>Aktivitas terbaru</h2>
+            <Link href="/transactions" className="text-action">
+              Lihat semua
+            </Link>
           </div>
-
-          <div className="lg:col-span-1">
-            <CategoryBreakdown
-              categories={activeCategories}
-              periodLabel={activePeriodLabel}
-              isLoading={transactionsLoading}
-            />
+          <div
+            className="surface activity-list"
+            aria-busy={transactionsQuery.isPending}
+          >
+            {transactionsQuery.isPending ? (
+              [1, 2, 3, 4].map((n) => (
+                <div key={n} className="activity-skeleton skeleton-block" />
+              ))
+            ) : recent.length === 0 ? (
+              <div className="empty-state">
+                <ShoppingBag size={28} />
+                <h3>
+                  {transactionsQuery.isError
+                    ? "Aktivitas belum tersedia"
+                    : "Belum ada transaksi"}
+                </h3>
+                <p>
+                  {transactionsQuery.isError
+                    ? "Coba muat ulang untuk melihat aktivitas."
+                    : `Transaksi untuk ${label.toLowerCase()} akan muncul di sini.`}
+                </p>
+              </div>
+            ) : (
+              recent.map((tx) => {
+                const Icon =
+                  tx.type === "income"
+                    ? ArrowDownLeft
+                    : tx.type === "transfer"
+                      ? ArrowLeftRight
+                      : ShoppingBag;
+                const account =
+                  tx.type === "transfer"
+                    ? `${accountName(tx.source_account_id)} → ${accountName(tx.destination_account_id)}`
+                    : accountName(
+                        tx.type === "income"
+                          ? tx.destination_account_id
+                          : tx.source_account_id,
+                      );
+                return (
+                  <Link
+                    key={tx.id}
+                    href={`/transactions/${tx.id}`}
+                    className="activity-row"
+                  >
+                    <span className="row-icon">
+                      <Icon size={22} strokeWidth={1.6} />
+                    </span>
+                    <div className="activity-description">
+                      <strong>
+                        {tx.merchant ||
+                          tx.description ||
+                          (tx.type === "income"
+                            ? "Pemasukan"
+                            : tx.type === "transfer"
+                              ? "Transfer"
+                              : "Pengeluaran")}
+                      </strong>
+                      <span>
+                        {formatDate(tx.occurred_at)} · {account}
+                      </span>
+                      {tx.parse_status === "NEEDS_REVIEW" && (
+                        <span className="review-note">Perlu diperiksa</span>
+                      )}
+                    </div>
+                    <strong
+                      className={`activity-amount ${tx.type === "income" ? "income-text" : ""}`}
+                    >
+                      {tx.type === "income"
+                        ? "+"
+                        : tx.type === "expense"
+                          ? "−"
+                          : ""}
+                      {formatIDR(tx.amount).replace("Rp ", "Rp")}
+                    </strong>
+                  </Link>
+                );
+              })
+            )}
           </div>
-        </div>
-
-        {/* 3. Accounts Summary Cards */}
-        <AccountCards
-          accounts={accounts}
-          onReconcile={(acc) => setReconcileAccount(acc)}
-          isLoading={accountsLoading}
-        />
-
-        {/* 4. Recent Transactions */}
-        <RecentTransactions
-          transactions={filteredTransactions.length > 0 ? filteredTransactions : transactions}
-          accounts={accounts}
-          categories={categories}
-          isLoading={transactionsLoading}
-        />
-
-        {/* Modals */}
-        <CreateTransactionModal
-          open={createTxOpen}
-          onOpenChange={setCreateTxOpen}
-          accounts={accounts}
-          categories={categories}
-          onDataChanged={loadData}
-        />
-
-        <ReconcileModal
-          account={reconcileAccount}
-          open={Boolean(reconcileAccount)}
-          onOpenChange={(open) => !open && setReconcileAccount(null)}
-          onDataChanged={loadData}
-        />
+        </section>
+        <section className="accounts-section">
+          <div className="section-heading">
+            <h2>Rekening</h2>
+            <Link href="/accounts" className="text-action">
+              Semua <ChevronRight size={17} />
+            </Link>
+          </div>
+          <div className="surface account-list">
+            {accountsQuery.isPending ? (
+              <div className="activity-skeleton skeleton-block" />
+            ) : activeAccounts.length === 0 ? (
+              <div className="empty-state">
+                <p>
+                  {accountsQuery.isError
+                    ? "Rekening belum tersedia."
+                    : "Tambahkan rekening untuk mulai mencatat keuangan."}
+                </p>
+                <Link className="text-action" href="/accounts">
+                  Buka rekening <ArrowRight size={16} />
+                </Link>
+              </div>
+            ) : (
+              activeAccounts.slice(0, 3).map((account) => {
+                const Icon =
+                  account.type === "bank"
+                    ? Landmark
+                    : account.type === "cash"
+                      ? Banknote
+                      : Wallet;
+                return (
+                  <div key={account.id} className="account-row">
+                    <Link href="/accounts" className="account-info">
+                      <span className="row-icon">
+                        <Icon size={23} strokeWidth={1.6} />
+                      </span>
+                      <span>
+                        <strong>{account.name}</strong>
+                        <small>
+                          {account.provider ||
+                            {
+                              bank: "Rekening bank",
+                              ewallet: "Dompet digital",
+                              cash: "Tunai",
+                              other: "Rekening lainnya",
+                            }[account.type]}
+                        </small>
+                      </span>
+                    </Link>
+                    <div className="account-balance">
+                      <strong>
+                        {formatIDR(account.balance).replace("Rp ", "Rp")}
+                      </strong>
+                      <button
+                        type="button"
+                        aria-label={`Sesuaikan saldo ${account.name}`}
+                        title="Sesuaikan saldo"
+                        onClick={() => setReconcile(account)}
+                      >
+                        <SlidersHorizontal size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {activeAccounts.length > 3 && (
+              <p className="account-footnote">
+                Menampilkan 3 dari {activeAccounts.length} rekening aktif
+              </p>
+            )}
+          </div>
+          <div className="analytics-link">
+            <Link className="text-action" href="/analytics">
+              Buka analisis <ArrowRight size={18} />
+            </Link>
+            <p>Lihat tren dan rincian pengeluaran.</p>
+          </div>
+        </section>
       </div>
-    </PageTransition>
+      <CreateTransactionModal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        accounts={accounts}
+        categories={categories}
+        onDataChanged={refresh}
+      />
+      <ReconcileModal
+        account={reconcile}
+        open={Boolean(reconcile)}
+        onOpenChange={(open) => {
+          if (!open) setReconcile(null);
+        }}
+        onDataChanged={refresh}
+      />
+      <span className="sr-only" role="status">
+        {loading ? "Memuat data keuangan" : "Data keuangan selesai dimuat"}
+      </span>
+    </div>
   );
 }

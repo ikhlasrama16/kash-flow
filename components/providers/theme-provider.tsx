@@ -1,76 +1,86 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 
 type Theme = "dark" | "light" | "system";
-
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   actualTheme: "dark" | "light";
   toggleTheme: () => void;
 }
-
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const THEME_EVENT = "kashflow-theme-change";
 
+function subscribeTheme(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(THEME_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(THEME_EVENT, callback);
+  };
+}
+function subscribeSystem(callback: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+function readTheme(fallback: Theme): Theme {
+  const saved =
+    localStorage.getItem("kashflow-theme") ||
+    localStorage.getItem("mikra-theme");
+  return saved === "dark" || saved === "light" || saved === "system"
+    ? saved
+    : fallback;
+}
+function setTheme(theme: Theme) {
+  localStorage.setItem("kashflow-theme", theme);
+  window.dispatchEvent(new Event(THEME_EVENT));
+}
 export function ThemeProvider({
   children,
-  defaultTheme = "dark",
+  defaultTheme = "light",
 }: {
   children: React.ReactNode;
   defaultTheme?: Theme;
 }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("kashflow-theme") || localStorage.getItem("mikra-theme");
-      if (saved === "dark" || saved === "light" || saved === "system") return saved;
-    }
-    return defaultTheme;
-  });
-
-  const [actualTheme, setActualTheme] = useState<"dark" | "light">("dark");
-
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    () => readTheme(defaultTheme),
+    () => defaultTheme,
+  );
+  const systemDark = useSyncExternalStore(
+    subscribeSystem,
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+    () => false,
+  );
+  const actualTheme =
+    theme === "system" ? (systemDark ? "dark" : "light") : theme;
   useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-
-    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const computed = theme === "system" ? (systemDark ? "dark" : "light") : theme;
-
-    root.classList.add(computed);
-    setActualTheme(computed);
-    localStorage.setItem("kashflow-theme", theme);
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => {
-      if (theme === "system") {
-        const nextComputed = mediaQuery.matches ? "dark" : "light";
-        root.classList.remove("light", "dark");
-        root.classList.add(nextComputed);
-        setActualTheme(nextComputed);
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const next = actualTheme === "dark" ? "light" : "dark";
-    setThemeState(next);
-  };
-
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(actualTheme);
+    document.documentElement.style.colorScheme = actualTheme;
+  }, [actualTheme]);
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, actualTheme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        actualTheme,
+        toggleTheme: () => setTheme(actualTheme === "dark" ? "light" : "dark"),
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
 }
-
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
+  if (!context) throw new Error("useTheme must be used within a ThemeProvider");
   return context;
 }
