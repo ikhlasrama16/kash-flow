@@ -129,7 +129,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
       {/* 1. Quick Presets & Comparison Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Preset Buttons */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-x-auto max-w-full">
+        <div className="flex items-center gap-1 bg-black/[0.05] dark:bg-white/[0.08] p-1 rounded-xl overflow-x-auto max-w-full">
           {PRESET_LABELS.map((item) => {
             const isActive = value.preset === item.key;
             return (
@@ -138,9 +138,9 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                 type="button"
                 disabled={disabled}
                 onClick={() => handleSelectPreset(item.key)}
-                className={`relative px-3 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer select-none whitespace-nowrap ${
+                className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer select-none whitespace-nowrap ${
                   isActive
-                    ? "bg-white dark:bg-[#151c2e] text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs border border-slate-200/60 dark:border-white/10"
+                    ? "bg-white dark:bg-[#2c2c2e] text-slate-900 dark:text-white font-semibold shadow-xs"
                     : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
@@ -170,7 +170,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
           </button>
 
           {comparisonDropdownOpen && (
-            <div className="absolute right-0 mt-1 w-52 rounded-xl bg-white dark:bg-[#0e1424] border border-slate-200 dark:border-white/15 p-1 shadow-xl z-50 text-xs">
+            <div className="absolute right-0 mt-1 w-52 rounded-xl bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-white/15 p-1 shadow-xl z-50 text-xs">
               <button
                 type="button"
                 onClick={() => {
@@ -179,12 +179,12 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                   value.comparison === "previous_equivalent"
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    ? "bg-blue-500/10 text-[#0066d6] dark:text-[#3894ff] font-semibold"
                     : "hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300"
                 }`}
               >
                 <span>Periode Lalu (Setara)</span>
-                {value.comparison === "previous_equivalent" && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+                {value.comparison === "previous_equivalent" && <Check className="w-3.5 h-3.5 text-[#0066d6] dark:text-[#3894ff]" />}
               </button>
               <button
                 type="button"
@@ -194,12 +194,12 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                   value.comparison === "none"
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                    ? "bg-blue-500/10 text-[#0066d6] dark:text-[#3894ff] font-semibold"
                     : "hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300"
                 }`}
               >
                 <span>Tanpa Perbandingan</span>
-                {value.comparison === "none" && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+                {value.comparison === "none" && <Check className="w-3.5 h-3.5 text-[#0066d6] dark:text-[#3894ff]" />}
               </button>
             </div>
           )}
@@ -209,7 +209,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
       {/* 2. Direct Date Inputs (Always Visible & Interactive) */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/5">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0">
+          <div className="p-1.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-slate-300 shrink-0">
             <Calendar className="w-4 h-4" />
           </div>
           <div className="text-xs">
@@ -233,7 +233,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                 setCustomStart(e.target.value);
                 handleApplyCustomDates(e.target.value, customEnd);
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white text-xs outline-none focus:border-[#0066d6] focus:ring-1 focus:ring-[#0066d6] cursor-pointer"
             />
           </div>
 
@@ -251,7 +251,7 @@ export function DateRangeFilter({ value, onChange, disabled }: DateRangeFilterPr
                 setCustomEnd(e.target.value);
                 handleApplyCustomDates(customStart, e.target.value);
               }}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-900 dark:text-white text-xs outline-none focus:border-[#0066d6] focus:ring-1 focus:ring-[#0066d6] cursor-pointer"
             />
           </div>
         </div>

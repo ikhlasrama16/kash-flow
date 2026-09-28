@@ -28,7 +28,7 @@ function renderInline(text: string): React.ReactNode {
     parts.push(
       <code
         key={`code-${match.index}`}
-        className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-semibold"
+        className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-[#0066d6] dark:text-[#3894ff] font-mono text-xs font-semibold"
       >
         {match[1]}
       </code>
@@ -69,7 +69,7 @@ function renderFormattedText(text: string, keyPrefix: string): React.ReactNode {
         href={safeUrl}
         target={safeUrl.startsWith("http") ? "_blank" : undefined}
         rel={safeUrl.startsWith("http") ? "noopener noreferrer" : undefined}
-        className="text-emerald-600 dark:text-emerald-400 font-medium underline underline-offset-2 hover:text-emerald-500 transition-colors"
+        className="text-[#0066d6] dark:text-[#3894ff] font-medium underline underline-offset-2 hover:opacity-80 transition-opacity"
       >
         {label}
       </a>
@@ -141,7 +141,7 @@ export function Markdown({ content, className }: MarkdownProps) {
       if (!currentList) return;
       if (currentList.type === "ul") {
         result.push(
-          <ul key={key} className="my-3 space-y-1.5 pl-5 list-disc text-slate-700 dark:text-slate-300 marker:text-emerald-500 text-sm">
+          <ul key={key} className="my-3 space-y-1.5 pl-5 list-disc text-slate-700 dark:text-slate-300 marker:text-[#0066d6] text-sm">
             {currentList.items.map((it, idx) => (
               <li key={idx} className="leading-relaxed">
                 {renderInline(it)}
@@ -151,7 +151,7 @@ export function Markdown({ content, className }: MarkdownProps) {
         );
       } else {
         result.push(
-          <ol key={key} className="my-3 space-y-1.5 pl-5 list-decimal text-slate-700 dark:text-slate-300 marker:font-semibold marker:text-emerald-500 text-sm">
+          <ol key={key} className="my-3 space-y-1.5 pl-5 list-decimal text-slate-700 dark:text-slate-300 marker:font-semibold marker:text-[#0066d6] text-sm">
             {currentList.items.map((it, idx) => (
               <li key={idx} className="leading-relaxed">
                 {renderInline(it)}
@@ -222,9 +222,9 @@ export function Markdown({ content, className }: MarkdownProps) {
         if (inCodeBlock) {
           // Closing code block
           result.push(
-            <div key={`codeblock-${i}`} className="my-3 rounded-xl overflow-hidden border border-slate-800 bg-[#090d16] text-xs">
+            <div key={`codeblock-${i}`} className="my-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100 text-xs">
               {codeLanguage && (
-                <div className="bg-slate-900/80 px-3 py-1 text-[11px] font-mono text-slate-400 border-b border-slate-800">
+                <div className="bg-slate-800/80 px-3 py-1 text-[11px] font-mono text-slate-400 border-b border-slate-700">
                   {codeLanguage}
                 </div>
               )}
@@ -313,7 +313,7 @@ export function Markdown({ content, className }: MarkdownProps) {
       }
       if (trimmed.startsWith("### ")) {
         result.push(
-          <h3 key={`h3-${i}`} className="text-sm md:text-base font-semibold text-emerald-600 dark:text-emerald-400 mt-3 mb-1.5">
+          <h3 key={`h3-${i}`} className="text-sm md:text-base font-semibold text-slate-900 dark:text-white mt-3 mb-1.5">
             {renderInline(trimmed.slice(4))}
           </h3>
         );
@@ -334,7 +334,7 @@ export function Markdown({ content, className }: MarkdownProps) {
         result.push(
           <div
             key={`quote-${i}`}
-            className="my-3 pl-3.5 py-1.5 border-l-2 border-emerald-500 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.07] rounded-r-xl text-xs md:text-sm text-slate-700 dark:text-slate-300 italic"
+            className="my-3 pl-3.5 py-1.5 border-l-2 border-[#0066d6] bg-blue-500/[0.04] dark:bg-blue-500/[0.08] rounded-r-xl text-xs md:text-sm text-slate-700 dark:text-slate-300 italic"
           >
             {renderInline(quoteContent)}
           </div>

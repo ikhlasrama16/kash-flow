@@ -27,6 +27,10 @@ export interface ReportComparison {
   previous_period_expense: number;
   expense_change_amount: number;
   expense_change_percentage: number;
+  previous_period_income?: number;
+  income_change_amount?: number;
+  income_change_percentage?: number;
+  net_cashflow_change_amount?: number;
 }
 
 export type ComparisonMode =
@@ -48,7 +52,9 @@ export interface ReportStatisticsV2 {
   };
   summary: ReportSummary;
   expense_by_category: CategoryTotal[];
+  income_by_category?: CategoryTotal[];
   top_merchants: MerchantTotal[];
+  top_income_sources?: MerchantTotal[];
   comparison?: ReportComparison;
   snapshot_hash: string;
 }
@@ -96,7 +102,9 @@ export interface ReportResponse {
   end_date: string;
   summary: ReportSummary;
   expense_by_category: CategoryTotal[];
+  income_by_category?: CategoryTotal[];
   top_merchants: MerchantTotal[];
+  top_income_sources?: MerchantTotal[];
   comparison: ReportComparison;
   ai: AIResult;
 }

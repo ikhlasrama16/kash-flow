@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
-  BarChart3,
   TrendingUp,
   TrendingDown,
   Sparkles,
@@ -17,11 +16,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageTransition } from "@/components/react-bits/page-transition";
-import { SpotlightCard } from "@/components/react-bits/spotlight-card";
+import { PageHeader, SegmentedControl, LoadError } from "@/components/ui/finance";
 import { AnimatedNumber } from "@/components/react-bits/animated-number";
 import { Markdown } from "@/components/ui/markdown";
 import {
@@ -43,20 +38,20 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { formatIDR } from "@/lib/utils";
 
-// Dynamic import for Recharts PieChart (optimized for mobile JS parsing)
+// Dynamic import for Recharts PieChart (optimized for client rendering)
 const ResponsivePieChart = dynamic(
   () =>
     import("recharts").then((recharts) => {
       const { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } = recharts;
       const PIE_COLORS = [
-        "#10b981",
-        "#3b82f6",
-        "#f59e0b",
-        "#8b5cf6",
-        "#ec4899",
-        "#06b6d4",
-        "#f43f5e",
-        "#64748b",
+        "#0066d6", // Apple Blue
+        "#f99542", // Apple Orange
+        "#34c759", // Apple Green
+        "#af52de", // Apple Purple
+        "#5856d6", // Apple Indigo
+        "#ff2d55", // Apple Pink
+        "#00c7be", // Apple Teal
+        "#8e8e93", // Apple Gray
       ];
 
       return function DynamicPieChart({
@@ -85,12 +80,15 @@ const ResponsivePieChart = dynamic(
               <Tooltip
                 formatter={(val: unknown) => [formatIDR(Number(val) || 0), "Jumlah"]}
                 contentStyle={{
-                  backgroundColor: "#0c111d",
-                  borderColor: "rgba(255,255,255,0.1)",
+                  backgroundColor: "var(--app-surface)",
+                  borderColor: "var(--app-line)",
                   borderRadius: "12px",
-                  color: "#fff",
+                  color: "var(--app-text)",
                   fontSize: "12px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                 }}
+                itemStyle={{ color: "var(--app-text)" }}
+                labelStyle={{ color: "var(--app-muted)", fontWeight: 600 }}
               />
               <Legend iconType="circle" wrapperStyle={{ fontSize: "11px" }} />
             </PieChart>
@@ -102,8 +100,8 @@ const ResponsivePieChart = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-64 flex flex-col items-center justify-center gap-2">
-        <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-        <span className="text-xs text-slate-400">Memuat diagram...</span>
+        <Loader2 className="w-5 h-5 text-[var(--app-blue)] animate-spin" />
+        <span className="text-xs text-[var(--app-muted)]">Memuat diagram...</span>
       </div>
     ),
   }
@@ -118,6 +116,9 @@ export function AnalyticsPage() {
     endDate: initialPreset.endDate,
     comparison: "previous_equivalent",
   });
+
+  // Toggle between Pengeluaran and Pemasukan breakdown
+  const [breakdownType, setBreakdownType] = useState<"expense" | "income">("expense");
 
   // Statistics state
   const [statistics, setStatistics] = useState<ReportStatisticsV2 | null>(null);
@@ -340,10 +341,19 @@ export function AnalyticsPage() {
 
   const summary = statistics?.summary;
   const comparison = statistics?.comparison;
-  const categories = statistics?.expense_by_category || [];
-  const merchants = statistics?.top_merchants || [];
 
-  const pieData = categories.map((c) => ({
+  // Data depending on active breakdownType (expense vs income)
+  const currentCategories =
+    breakdownType === "expense"
+      ? statistics?.expense_by_category || []
+      : statistics?.income_by_category || [];
+
+  const currentRanking =
+    breakdownType === "expense"
+      ? statistics?.top_merchants || []
+      : statistics?.top_income_sources || [];
+
+  const pieData = currentCategories.map((c) => ({
     name: c.category || "Lainnya",
     value: c.amount,
   }));
@@ -351,394 +361,381 @@ export function AnalyticsPage() {
   const isAILoading = aiStatus === "queued" || aiStatus === "running";
 
   return (
-    <PageTransition>
-      <div className="space-y-6 md:space-y-8">
-        {/* Header with Title, Range Picker & Refresh */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
-                  <BarChart3 className="w-5 h-5" />
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  Laporan & Analisis AI v2
-                </h1>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Rentang: {formatIDDate(rangeState.startDate)} s/d {formatIDDate(rangeState.endDate)} (Asia/Jakarta)
-              </p>
-            </div>
+    <div className="finance-page">
+      {/* Header */}
+      <PageHeader
+        title="Laporan & Analisis AI"
+        description={`Rentang: ${formatIDDate(rangeState.startDate)} s/d ${formatIDDate(rangeState.endDate)} (Asia/Jakarta)`}
+        actions={
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={statsLoading}
+            className="text-action create-action"
+            style={{ height: "36px", padding: "0 14px" }}
+          >
+            <RefreshCw size={15} className={statsLoading ? "animate-spin" : ""} />
+            <span>{statsLoading ? "Memuat..." : "Perbarui"}</span>
+          </button>
+        }
+      />
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={statsLoading}
-                className="text-xs rounded-xl bg-white dark:bg-white/5 cursor-pointer"
-                title="Muat ulang laporan"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${statsLoading ? "animate-spin" : ""}`} />
-                <span>{statsLoading ? "Memuat..." : "Perbarui"}</span>
-              </Button>
+      {/* Date Range & Comparison Selector */}
+      <div className="surface" style={{ padding: "16px 20px" }}>
+        <DateRangeFilter
+          value={rangeState}
+          onChange={(newVal) => setRangeState(newVal)}
+          disabled={statsLoading}
+        />
+      </div>
+
+      {/* Error State for Statistics */}
+      {statsError && (
+        <LoadError onRetry={handleRefresh}>
+          {statsError}
+        </LoadError>
+      )}
+
+      {/* 1. Top Metric Cards */}
+      <div className="analytics-stats-grid">
+        {/* Total Income */}
+        <div className="surface stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Total Pemasukan</span>
+            <div className="stat-card-icon income">
+              <TrendingUp size={18} />
             </div>
           </div>
-
-          {/* Date Range & Comparison Selector */}
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0c111d] border border-slate-200/80 dark:border-white/10 shadow-xs">
-            <DateRangeFilter
-              value={rangeState}
-              onChange={(newVal) => setRangeState(newVal)}
-              disabled={statsLoading}
-            />
+          <div className="stat-card-value" style={{ color: "var(--app-blue)" }}>
+            {statsLoading ? (
+              <div className="h-8 w-32 bg-black/[0.06] dark:bg-white/[0.08] rounded-lg animate-pulse" />
+            ) : (
+              <AnimatedNumber value={summary?.income || 0} showSign={Boolean(summary?.income)} />
+            )}
           </div>
+          <p className="stat-card-sub">
+            {comparison?.income_change_percentage !== undefined ? (
+              <span>
+                {comparison.income_change_percentage >= 0 ? "+" : ""}
+                {comparison.income_change_percentage.toFixed(1)}% vs lalu
+              </span>
+            ) : summary?.transaction_count !== undefined ? (
+              `${summary.transaction_count} transaksi total`
+            ) : (
+              "Periode ini"
+            )}
+          </p>
         </div>
 
-        {/* Error State for Statistics */}
-        {statsError && (
-          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{statsError}</span>
+        {/* Total Expense */}
+        <div className="surface stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Total Pengeluaran</span>
+            <div className="stat-card-icon expense">
+              <TrendingDown size={18} />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              className="text-xs h-7 border-rose-500/30 text-rose-600 dark:text-rose-400 cursor-pointer"
-            >
-              Coba Lagi
-            </Button>
+          </div>
+          <div className="stat-card-value" style={{ color: "var(--app-orange)" }}>
+            {statsLoading ? (
+              <div className="h-8 w-32 bg-black/[0.06] dark:bg-white/[0.08] rounded-lg animate-pulse" />
+            ) : (
+              <AnimatedNumber value={summary?.expense ? -summary.expense : 0} />
+            )}
+          </div>
+          <p className="stat-card-sub">
+            {summary?.expense_transaction_count || 0} kali belanja
+            {comparison?.expense_change_percentage !== undefined &&
+              ` • ${comparison.expense_change_percentage >= 0 ? "+" : ""}${comparison.expense_change_percentage.toFixed(1)}% vs lalu`}
+          </p>
+        </div>
+
+        {/* Daily Average Expense */}
+        <div className="surface stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Rata-rata Harian</span>
+            <div className="stat-card-icon neutral">
+              <Calendar size={18} />
+            </div>
+          </div>
+          <div className="stat-card-value" style={{ color: "var(--app-text)" }}>
+            {statsLoading ? (
+              <div className="h-8 w-32 bg-black/[0.06] dark:bg-white/[0.08] rounded-lg animate-pulse" />
+            ) : (
+              <AnimatedNumber value={summary?.average_daily_expense || 0} />
+            )}
+          </div>
+          <p className="stat-card-sub">Estimasi pengeluaran per hari</p>
+        </div>
+
+        {/* Net Cashflow */}
+        <div className="surface stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Surplus / Defisit</span>
+            <div className="stat-card-icon neutral">
+              <Scale size={18} />
+            </div>
+          </div>
+          <div
+            className="stat-card-value"
+            style={{
+              color:
+                (summary?.net_cashflow || 0) < 0
+                  ? "var(--app-orange)"
+                  : "var(--app-text)",
+            }}
+          >
+            {statsLoading ? (
+              <div className="h-8 w-32 bg-black/[0.06] dark:bg-white/[0.08] rounded-lg animate-pulse" />
+            ) : (
+              <AnimatedNumber
+                value={summary?.net_cashflow || 0}
+                showSign={(summary?.net_cashflow || 0) > 0}
+              />
+            )}
+          </div>
+          <p className="stat-card-sub">
+            {(summary?.net_cashflow || 0) >= 0
+              ? "Kondisi arus kas positif"
+              : "Defisit pengeluaran"}
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Asynchronous AI Insights & Analysis v2 */}
+      <section className="surface ai-insight-panel">
+        <div className="ai-panel-header">
+          <div className="ai-panel-title">
+            <div className="stat-card-icon income">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <h3>Evaluasi & Saran AI</h3>
+              <p style={{ fontSize: "12px", color: "var(--app-muted)", margin: 0 }}>
+                Analisis 360° pola belanja, kestabilan pemasukan, dan arus kas
+              </p>
+            </div>
+          </div>
+
+          <span className={`ai-status-pill ${aiStatus}`}>
+            {aiStatus === "queued" && "Menyiapkan..."}
+            {aiStatus === "running" && "Menganalisis..."}
+            {aiStatus === "complete" && "Selesai"}
+            {aiStatus === "failed" && "Gagal"}
+            {aiStatus === "idle" && "Standby"}
+          </span>
+        </div>
+
+        {/* 1. Loading / Queued / Running State */}
+        {isAILoading && (
+          <div style={{ padding: "36px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: "12px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "16px", background: "color-mix(in srgb, var(--app-blue) 12%, transparent)", color: "var(--app-blue)", display: "grid", placeItems: "center" }}>
+              <Bot size={24} className="animate-pulse" />
+            </div>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--app-text)", margin: 0 }}>
+                {aiStatus === "queued"
+                  ? "Menyiapkan analisis..."
+                  : "Menganalisis transaksi..."}
+              </p>
+              <p style={{ fontSize: "12px", color: "var(--app-muted)", marginTop: "4px", maxWidth: "380px" }}>
+                {aiStatus === "queued"
+                  ? "Permintaan telah masuk antrean pemrosesan AI."
+                  : "AI sedang mengevaluasi pengeluaran vs pemasukan, menghitung rasio tabungan, dan menyusun saran finansial."}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* 1. Top Metric Cards (Rendered immediately after statistics arrive) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Income */}
-          <SpotlightCard
-            spotlightColor="rgba(16, 185, 129, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Total Pemasukan
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
+        {/* 2. Failed State with Retry Button */}
+        {aiStatus === "failed" && !isAILoading && (
+          <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: "12px", borderRadius: "14px", background: "rgba(239, 68, 68, 0.05)" }}>
+            <AlertCircle size={24} style={{ color: "#ef4444" }} />
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--app-text)", margin: 0 }}>
+                Tidak dapat menyelesaikan analisis AI
+              </p>
+              <p style={{ fontSize: "12px", color: "var(--app-muted)", marginTop: "4px", maxWidth: "400px" }}>
+                {aiError || "Terjadi kesalahan pada backend atau kuota AI sedang padat."}
+              </p>
             </div>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-3 tabular-nums">
-              {statsLoading ? (
-                <div className="h-7 w-28 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse" />
-              ) : (
-                <AnimatedNumber value={summary?.income || 0} showSign={Boolean(summary?.income)} />
-              )}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {summary?.transaction_count !== undefined
-                ? `${summary.transaction_count} transaksi total`
-                : "Periode ini"}
-            </p>
-          </SpotlightCard>
-
-          {/* Expense */}
-          <SpotlightCard
-            spotlightColor="rgba(244, 63, 94, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Total Pengeluaran
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                <TrendingDown className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-3 tabular-nums">
-              {statsLoading ? (
-                <div className="h-7 w-28 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse" />
-              ) : (
-                <AnimatedNumber value={summary?.expense ? -summary.expense : 0} />
-              )}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {summary?.expense_transaction_count || 0} kali belanja
-              {comparison &&
-                ` • ${(comparison.expense_change_percentage ?? 0) >= 0 ? "+" : ""}${(
-                  comparison.expense_change_percentage ?? 0
-                ).toFixed(1)}% vs lalu`}
-            </p>
-          </SpotlightCard>
-
-          {/* Daily Average Expense */}
-          <SpotlightCard
-            spotlightColor="rgba(245, 158, 11, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Rata-rata Harian
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                <Calendar className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-3 tabular-nums">
-              {statsLoading ? (
-                <div className="h-7 w-28 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse" />
-              ) : (
-                <AnimatedNumber value={summary?.average_daily_expense || 0} />
-              )}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">Estimasi pengeluaran per hari</p>
-          </SpotlightCard>
-
-          {/* Net Cashflow */}
-          <SpotlightCard
-            spotlightColor="rgba(59, 130, 246, 0.12)"
-            className="p-5 border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Surplus / Defisit
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center">
-                <Scale className="w-4 h-4" />
-              </div>
-            </div>
-            <div
-              className={`text-2xl font-bold mt-3 tabular-nums ${
-                (summary?.net_cashflow || 0) >= 0
-                  ? "text-slate-900 dark:text-white"
-                  : "text-rose-600 dark:text-rose-400"
-              }`}
+            <button
+              type="button"
+              onClick={handleRetryAI}
+              className="text-action"
+              style={{ fontSize: "12px" }}
             >
-              {statsLoading ? (
-                <div className="h-7 w-28 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse" />
-              ) : (
-                <AnimatedNumber
-                  value={summary?.net_cashflow || 0}
-                  showSign={(summary?.net_cashflow || 0) > 0}
-                />
+              <RefreshCw size={14} />
+              <span>Coba Lagi</span>
+            </button>
+          </div>
+        )}
+
+        {/* 3. Complete State with Sanitized Markdown */}
+        {aiStatus === "complete" && aiJob?.content && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div className="ai-content-box">
+              <Markdown content={aiJob.content} />
+            </div>
+
+            <div className="ai-meta">
+              {aiJob.model && (
+                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <CheckCircle2 size={14} style={{ color: "var(--app-blue)" }} />
+                  <span>Model: <code>{aiJob.model}</code></span>
+                </span>
+              )}
+
+              {aiJob.generated_at && (
+                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Clock size={14} />
+                  <span>{new Date(aiJob.generated_at).toLocaleString("id-ID")}</span>
+                </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {(summary?.net_cashflow || 0) >= 0
-                ? "Kondisi arus kas positif ✨"
-                : "Defisit pengeluaran"}
+          </div>
+        )}
+
+        {/* 4. Idle or empty state */}
+        {aiStatus === "idle" && !isAILoading && !aiJob && (
+          <div style={{ padding: "24px", textAlign: "center", fontSize: "13px", color: "var(--app-muted)" }}>
+            Pilih rentang tanggal untuk memulai analisis keuangan otomatis.
+          </div>
+        )}
+      </section>
+
+      {/* 3. Charts & Top Rankings Grid with Income/Expense Switcher */}
+      <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h2 style={{ fontSize: "17px", fontWeight: 700, margin: 0, letterSpacing: "-0.3px" }}>
+              Rincian & Peringkat Transaksi
+            </h2>
+            <p style={{ fontSize: "12px", color: "var(--app-muted)", margin: "2px 0 0" }}>
+              Analisis proporsi kategori dan daftar pihak penerima/sumber dana
             </p>
-          </SpotlightCard>
+          </div>
+          <SegmentedControl
+            value={breakdownType}
+            onChange={(v) => setBreakdownType(v)}
+            options={[
+              { value: "expense", label: "Pengeluaran" },
+              { value: "income", label: "Pemasukan" },
+            ]}
+            label="Pilih jenis rincian transaksi"
+          />
         </div>
 
-        {/* 2. Asynchronous AI Insights & Analysis v2 */}
-        <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.04] via-teal-500/[0.02] to-transparent relative overflow-hidden shadow-xs">
-          <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.15)_0%,transparent_70%)]" />
-
-          <CardHeader className="flex flex-row items-center justify-between pb-3 gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 text-emerald-500 shadow-xs">
-                <Sparkles className="w-5 h-5" />
-              </div>
+        <div className="analytics-charts-grid">
+          {/* Category Breakdown Pie Chart */}
+          <div className="surface chart-panel">
+            <div className="chart-panel-header">
               <div>
-                <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                  <span>Wawasan & Evaluasi AI v2</span>
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Analisis asinkron berbasis snapshot transaksi rentang tanggal
-                </CardDescription>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0 }}>
+                  {breakdownType === "expense"
+                    ? "Distribusi Kategori Belanja"
+                    : "Distribusi Sumber Pemasukan"}
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--app-muted)", margin: "4px 0 0" }}>
+                  {breakdownType === "expense"
+                    ? "Proporsi pengeluaran per kategori pada rentang ini"
+                    : "Proporsi pemasukan per kategori pada rentang ini"}
+                </p>
               </div>
+              <PieIcon size={18} style={{ color: "var(--app-muted)" }} />
             </div>
 
-            {/* AI Status Badge */}
-            <Badge
-              variant={
-                aiStatus === "complete"
-                  ? "success"
-                  : aiStatus === "failed"
-                  ? "danger"
-                  : "secondary"
-              }
-              className="text-xs capitalize"
-            >
-              {aiStatus === "queued" && "⏳ Menyiapkan..."}
-              {aiStatus === "running" && "⚡ Menganalisis..."}
-              {aiStatus === "complete" && "✓ Selesai"}
-              {aiStatus === "failed" && "✕ Gagal"}
-              {aiStatus === "idle" && "Standby"}
-            </Badge>
-          </CardHeader>
-
-          <CardContent className="pt-2">
-            {/* 1. Loading / Queued / Running State */}
-            {isAILoading && (
-              <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 animate-pulse">
-                    <Bot className="w-6 h-6" />
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#090d16] animate-ping" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {aiStatus === "queued"
-                      ? "Menyiapkan analisis..."
-                      : "Menganalisis transaksi..."}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                    {aiStatus === "queued"
-                      ? "Permintaan telah masuk antrean pemrosesan AI."
-                      : "AI sedang mengevaluasi pola belanja, menghitung proyeksi kas, dan menyusun saran finansial."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* 2. Failed State with Retry Button */}
-            {aiStatus === "failed" && !isAILoading && (
-              <div className="py-6 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl bg-rose-500/[0.04] border border-rose-500/20 p-5">
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Tidak dapat menyelesaikan analisis AI
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-md">
-                    {aiError || "Terjadi kesalahan pada backend atau kuota AI sedang padat."}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRetryAI}
-                  className="text-xs rounded-xl border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-                  <span>Coba Lagi</span>
-                </Button>
-              </div>
-            )}
-
-            {/* 3. Complete State with Sanitized Markdown */}
-            {aiStatus === "complete" && aiJob?.content && (
-              <div className="space-y-4">
-                <div className="rounded-2xl bg-white/70 dark:bg-[#0e1424]/80 p-5 border border-emerald-500/20 shadow-xs">
-                  <Markdown content={aiJob.content} />
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
-                  {aiJob.model && (
-                    <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>
-                        Model: <code className="font-mono text-slate-300">{aiJob.model}</code>
-                      </span>
-                    </span>
-                  )}
-
-                  {aiJob.generated_at && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{new Date(aiJob.generated_at).toLocaleString("id-ID")}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 4. Idle or empty state */}
-            {aiStatus === "idle" && !isAILoading && !aiJob && (
-              <div className="py-6 text-center text-xs text-slate-400">
-                Pilih rentang tanggal untuk memulai analisis keuangan otomatis.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 3. Charts & Top Merchants Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Category Breakdown Pie Chart */}
-          <Card className="border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Distribusi Kategori Belanja</CardTitle>
-                <PieIcon className="w-4 h-4 text-slate-400" />
-              </div>
-              <CardDescription className="text-xs">
-                Proporsi pengeluaran per kategori pada rentang ini
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            <div>
               {statsLoading ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-2">
-                  <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-                  <span className="text-xs text-slate-400">Memuat statistik kategori...</span>
+                  <Loader2 className="w-5 h-5 text-[var(--app-blue)] animate-spin" />
+                  <span className="text-xs text-[var(--app-muted)]">Memuat statistik kategori...</span>
                 </div>
               ) : pieData.length === 0 ? (
-                <div className="h-64 flex flex-col items-center justify-center text-xs text-slate-400 text-center">
-                  <PieIcon className="w-8 h-8 text-slate-400 mb-2 opacity-50" />
-                  <span>Belum ada transaksi belanja pada periode ini</span>
+                <div className="h-64 flex flex-col items-center justify-center text-xs text-[var(--app-muted)] text-center">
+                  <PieIcon className="w-8 h-8 text-[var(--app-muted)] mb-2 opacity-40" />
+                  <span>
+                    {breakdownType === "expense"
+                      ? "Belum ada transaksi belanja pada periode ini"
+                      : "Belum ada transaksi pemasukan pada periode ini"}
+                  </span>
                 </div>
               ) : (
                 <div className="h-64 w-full">
                   <ResponsivePieChart data={pieData} />
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Top Merchants List */}
-          <Card className="border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0c111d] shadow-xs">
-            <CardHeader>
-              <CardTitle className="text-base">Top Penerima / Merchant</CardTitle>
-              <CardDescription className="text-xs">
-                Penerima transaksi belanja terbesar pada rentang ini
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          {/* Top Merchants / Payers List */}
+          <div className="surface chart-panel">
+            <div className="chart-panel-header">
+              <div>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0 }}>
+                  {breakdownType === "expense"
+                    ? "Top Penerima / Merchant"
+                    : "Top Pembayar / Sumber Dana"}
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--app-muted)", margin: "4px 0 0" }}>
+                  {breakdownType === "expense"
+                    ? "Penerima transaksi belanja terbesar pada rentang ini"
+                    : "Sumber dana pemasukan terbesar pada rentang ini"}
+                </p>
+              </div>
+            </div>
+
+            <div>
               {statsLoading ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-2">
-                  <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-                  <span className="text-xs text-slate-400">Memuat daftar merchant...</span>
+                  <Loader2 className="w-5 h-5 text-[var(--app-blue)] animate-spin" />
+                  <span className="text-xs text-[var(--app-muted)]">Memuat daftar peringkat...</span>
                 </div>
-              ) : merchants.length === 0 ? (
-                <div className="h-64 flex flex-col items-center justify-center text-xs text-slate-400 text-center">
-                  <span>Belum ada riwayat merchant pada rentang ini</span>
+              ) : currentRanking.length === 0 ? (
+                <div className="h-64 flex flex-col items-center justify-center text-xs text-[var(--app-muted)] text-center">
+                  <span>
+                    {breakdownType === "expense"
+                      ? "Belum ada riwayat merchant pada rentang ini"
+                      : "Belum ada riwayat sumber dana pada rentang ini"}
+                  </span>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                  {merchants.map((m, idx) => (
-                    <div
-                      key={m.merchant || idx}
-                      className="flex items-center justify-between p-3 rounded-xl border border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                  {currentRanking.map((m, idx) => (
+                    <div key={m.merchant || idx} className="merchant-rank-row">
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                        <div className="merchant-rank-badge">
                           #{idx + 1}
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: "13px", color: "var(--app-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {m.merchant || "Tanpa Nama"}
                           </div>
-                          <div className="text-[10px] text-slate-400">
+                          <div style={{ fontSize: "11px", color: "var(--app-muted)" }}>
                             {m.transaction_count} transaksi
                           </div>
                         </div>
                       </div>
 
-                      <div className="font-bold text-xs tabular-nums text-slate-900 dark:text-white shrink-0">
-                        {formatIDR(m.amount)}
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "13px",
+                          fontVariantNumeric: "tabular-nums",
+                          color: breakdownType === "income" ? "var(--app-blue)" : "var(--app-text)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {breakdownType === "income" ? "+" : ""}{formatIDR(m.amount)}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
-      </div>
-    </PageTransition>
+      </section>
+    </div>
   );
 }
 

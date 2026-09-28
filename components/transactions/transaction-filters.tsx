@@ -103,32 +103,29 @@ export function TransactionFilters({
     filters.datePreset !== "all";
 
   return (
-    <div className="space-y-3 bg-white dark:bg-[#0e1422] p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs">
+    <div className="surface transaction-filters-surface">
       {/* Search and Type Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--app-muted)]" />
+          <input
+            type="text"
             placeholder="Cari merchant, toko, deskripsi..."
             value={filters.search}
             onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
-            className="pl-10 h-10"
+            className="filter-search-input"
           />
         </div>
 
         {/* Type pills */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200/60 dark:border-white/5 shrink-0 overflow-x-auto">
+        <div className="segmented-control shrink-0" role="group" aria-label="Tipe transaksi">
           {(["all", "expense", "income", "transfer"] as const).map((t) => (
             <button
               key={t}
               type="button"
+              aria-pressed={filters.type === t}
               onClick={() => onFilterChange({ ...filters, type: t })}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg capitalize transition-all cursor-pointer whitespace-nowrap ${
-                filters.type === t
-                  ? "bg-white dark:bg-[#161e31] text-slate-900 dark:text-white shadow-xs font-semibold"
-                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-              }`}
             >
               {t === "all" ? "Semua" : t === "expense" ? "Pengeluaran" : t === "income" ? "Pemasukan" : "Transfer"}
             </button>
@@ -137,22 +134,18 @@ export function TransactionFilters({
       </div>
 
       {/* Date Range Filter Section */}
-      <div className="pt-2 border-t border-slate-100 dark:border-white/5 space-y-2">
+      <div className="pt-2 border-t border-[var(--app-line)] space-y-2">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
           {/* Preset Buttons */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200/60 dark:border-white/5 overflow-x-auto">
+          <div className="segmented-control shrink-0 max-w-full overflow-x-auto" role="group" aria-label="Rentang tanggal">
             {PRESETS.map((p) => {
               const isActive = filters.datePreset === p.key;
               return (
                 <button
                   key={p.key}
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => handlePresetSelect(p.key)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? "bg-white dark:bg-[#161e31] text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold"
-                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                  }`}
                 >
                   {p.label}
                 </button>
@@ -163,37 +156,37 @@ export function TransactionFilters({
           {/* Date Pickers */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-slate-400 font-medium">Dari:</span>
+              <span className="text-[12px] text-[var(--app-muted)] font-medium">Dari:</span>
               <input
                 type="date"
                 max={todayMax}
                 value={filters.startDate || ""}
                 onChange={(e) => handleCustomDateChange(e.target.value, filters.endDate)}
-                className="px-2.5 py-1 h-8 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] text-slate-900 dark:text-slate-200 text-xs outline-hidden focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                className="filter-date-input"
               />
             </div>
 
-            <span className="text-slate-400 text-xs">s/d</span>
+            <span className="text-[var(--app-muted)] text-xs">s/d</span>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-slate-400 font-medium">Sampai:</span>
+              <span className="text-[12px] text-[var(--app-muted)] font-medium">Sampai:</span>
               <input
                 type="date"
                 max={todayMax}
                 min={filters.startDate || undefined}
                 value={filters.endDate || ""}
                 onChange={(e) => handleCustomDateChange(filters.startDate, e.target.value)}
-                className="px-2.5 py-1 h-8 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] text-slate-900 dark:text-slate-200 text-xs outline-hidden focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                className="filter-date-input"
               />
             </div>
           </div>
         </div>
 
         {(filters.startDate || filters.endDate) && (
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+          <div className="flex items-center gap-1.5 text-[12px] text-[var(--app-muted)]">
+            <Calendar className="w-3.5 h-3.5 text-[var(--app-blue)]" />
             <span>Rentang Aktif:</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
+            <span className="font-semibold text-[var(--foreground)]">
               {filters.startDate ? formatIDDate(filters.startDate) : "Awal"} — {filters.endDate ? formatIDDate(filters.endDate) : "Sekarang"}
             </span>
           </div>
@@ -206,7 +199,7 @@ export function TransactionFilters({
         <select
           value={filters.accountId}
           onChange={(e) => onFilterChange({ ...filters, accountId: e.target.value })}
-          className="h-9 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/50"
+          className="filter-select"
         >
           <option value="">Semua Rekening</option>
           {accounts.map((a) => (
@@ -220,7 +213,7 @@ export function TransactionFilters({
         <select
           value={filters.categoryId}
           onChange={(e) => onFilterChange({ ...filters, categoryId: e.target.value })}
-          className="h-9 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/50"
+          className="filter-select"
         >
           <option value="">Semua Kategori</option>
           {categories.map((c) => (
@@ -234,7 +227,7 @@ export function TransactionFilters({
         <select
           value={filters.parseStatus}
           onChange={(e) => onFilterChange({ ...filters, parseStatus: e.target.value })}
-          className="h-9 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/50"
+          className="filter-select"
         >
           <option value="">Semua Status Parser</option>
           <option value="AUTO">AUTO</option>
@@ -247,12 +240,12 @@ export function TransactionFilters({
 
       {/* Reset filter badge */}
       {isFiltered && (
-        <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
+        <div className="flex items-center justify-between pt-1 text-xs text-[var(--app-muted)]">
           <span>Filter diterapkan</span>
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1 text-rose-500 hover:text-rose-600 font-medium cursor-pointer"
+            className="filter-reset-btn"
           >
             <X className="w-3.5 h-3.5" />
             <span>Reset Filter</span>

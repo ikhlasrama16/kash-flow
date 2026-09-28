@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Plus, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PageTransition } from "@/components/react-bits/page-transition";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PageHeader, AddAction } from "@/components/ui/finance";
 import {
   TransactionFilters,
   TransactionFilterState,
@@ -124,105 +123,85 @@ export default function TransactionsPage() {
   }, [filteredTransactions, page]);
 
   return (
-    <PageTransition>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
-                <ArrowLeftRight className="w-5 h-5" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Daftar Transaksi
-              </h1>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Menampilkan {filteredTransactions.length} riwayat pergerakan dana
-            </p>
-          </div>
+    <div className="finance-page">
+      {/* Header */}
+      <PageHeader
+        title="Aktivitas"
+        description={`Menampilkan ${filteredTransactions.length} riwayat pergerakan dana.`}
+        actions={
+          <AddAction onClick={() => setCreateModalOpen(true)}>
+            Catat transaksi
+          </AddAction>
+        }
+      />
 
-          <Button
-            variant="emerald"
-            size="sm"
-            onClick={() => setCreateModalOpen(true)}
-            className="text-xs font-semibold shadow-md shadow-emerald-500/20"
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            <span>Tambah Transaksi</span>
-          </Button>
+      {/* Filter controls */}
+      <TransactionFilters
+        filters={filters}
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          setPage(1); // reset to first page on filter change
+        }}
+        accounts={accounts}
+        categories={categories}
+      />
+
+      {/* Table & Cards */}
+      <TransactionTable
+        transactions={paginatedTransactions}
+        accounts={accounts}
+        categories={categories}
+        onSelectTransaction={(tx) => setSelectedTransaction(tx)}
+        isLoading={txLoading}
+      />
+
+      {/* Pagination controls */}
+      {filteredTransactions.length > ITEMS_PER_PAGE && (
+        <div className="pagination-bar">
+          <span>
+            Halaman {page} dari {totalPages} ({filteredTransactions.length} total)
+          </span>
+          <div className="pagination-actions">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="pagination-btn"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Sebelumnya</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="pagination-btn"
+            >
+              <span>Berikutnya</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* Filter controls */}
-        <TransactionFilters
-          filters={filters}
-          onFilterChange={(newFilters) => {
-            setFilters(newFilters);
-            setPage(1); // reset to first page on filter change
-          }}
-          accounts={accounts}
-          categories={categories}
-        />
+      {/* Detail Modal */}
+      <TransactionDetailModal
+        transaction={selectedTransaction}
+        open={Boolean(selectedTransaction)}
+        onOpenChange={(open) => !open && setSelectedTransaction(null)}
+        accounts={accounts}
+        categories={categories}
+        onDataChanged={loadData}
+      />
 
-        {/* Table & Cards */}
-        <TransactionTable
-          transactions={paginatedTransactions}
-          accounts={accounts}
-          categories={categories}
-          onSelectTransaction={(tx) => setSelectedTransaction(tx)}
-          isLoading={txLoading}
-        />
-
-        {/* Pagination controls */}
-        {filteredTransactions.length > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between px-2 pt-2 text-xs text-slate-500">
-            <span>
-              Halaman {page} dari {totalPages} ({filteredTransactions.length} total)
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="h-8 px-2.5"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Sebelumnya</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="h-8 px-2.5"
-              >
-                <span className="hidden sm:inline">Berikutnya</span>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Detail Modal */}
-        <TransactionDetailModal
-          transaction={selectedTransaction}
-          open={Boolean(selectedTransaction)}
-          onOpenChange={(open) => !open && setSelectedTransaction(null)}
-          accounts={accounts}
-          categories={categories}
-          onDataChanged={loadData}
-        />
-
-        {/* Create Modal */}
-        <CreateTransactionModal
-          open={createModalOpen}
-          onOpenChange={setCreateModalOpen}
-          accounts={accounts}
-          categories={categories}
-          onDataChanged={loadData}
-        />
-      </div>
-    </PageTransition>
+      {/* Create Modal */}
+      <CreateTransactionModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        accounts={accounts}
+        categories={categories}
+        onDataChanged={loadData}
+      />
+    </div>
   );
 }
