@@ -385,7 +385,14 @@ button:disabled {
   padding: 22px 25px;
 }
 .monthly-heading {
-  margin-bottom: 22px;
+  margin-bottom: 20px;
+}
+.monthly-heading-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .monthly-heading select {
   background: var(--app-surface);
@@ -399,6 +406,195 @@ button:disabled {
   cursor: pointer;
   letter-spacing: -0.5px;
 }
+.panel-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--app-icon);
+  padding: 3px;
+  border-radius: 12px;
+  gap: 2px;
+}
+.panel-view-toggle button {
+  border: none;
+  background: transparent;
+  padding: 4px 9px;
+  border-radius: 9px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 550;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.panel-view-toggle button.active {
+  background: var(--app-surface);
+  color: var(--foreground);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Apple Trend Chart styles */
+.apple-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 2px;
+}
+.trend-inspection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+}
+.inspection-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--foreground);
+}
+.inspection-values {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inspection-values .expense {
+  color: var(--app-orange);
+  font-weight: 600;
+}
+.inspection-values .income {
+  color: #5297f5;
+  font-weight: 600;
+}
+.granularity-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--app-icon);
+  padding: 2px;
+  border-radius: 8px;
+  gap: 2px;
+  margin-left: 4px;
+}
+.granularity-toggle button {
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--app-muted);
+  cursor: pointer;
+  line-height: 1.2;
+}
+.granularity-toggle button.active {
+  background: var(--app-surface);
+  color: var(--foreground);
+}
+
+.apple-bars-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 108px;
+  padding: 6px 0 2px;
+}
+.apple-bars-row.dense {
+  gap: 3px;
+}
+.apple-bar-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
+  min-width: 0;
+  position: relative;
+  user-select: none;
+}
+.apple-bar-track-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+}
+.apple-bars-row.dense .apple-bar-track-wrap {
+  gap: 1.5px;
+}
+.apple-bar-ghost {
+  width: 100%;
+  max-width: 12px;
+  height: 100%;
+  background: var(--app-icon);
+  border-radius: 999px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  position: relative;
+  transition: background 0.15s ease;
+}
+.apple-bars-row.dense .apple-bar-ghost {
+  max-width: 6px;
+}
+.apple-bar-slot:hover .apple-bar-ghost,
+.apple-bar-slot.active .apple-bar-ghost {
+  background: color-mix(in srgb, var(--app-icon) 70%, var(--foreground));
+}
+.apple-bar-fill {
+  width: 100%;
+  border-radius: 999px;
+  transition: height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.apple-bar-fill.expense {
+  background: var(--app-orange);
+}
+.apple-bar-fill.income {
+  background: #5297f5;
+}
+.apple-bar-label {
+  font-size: 10px;
+  color: var(--app-muted);
+  font-weight: 500;
+  margin-top: 5px;
+  white-space: nowrap;
+  line-height: 1;
+}
+.apple-bar-slot.active .apple-bar-label {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.apple-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--app-muted);
+  padding-top: 2px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.legend-dot.income {
+  background: #5297f5;
+}
+.legend-dot.expense {
+  background: var(--app-orange);
+}
+
 .comparison-row {
   display: grid;
   grid-template-columns: minmax(130px, 0.8fr) minmax(30px, 1fr);

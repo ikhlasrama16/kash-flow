@@ -14,6 +14,7 @@ import {
   ArrowLeftRight,
   ShoppingBag,
   SlidersHorizontal,
+  BarChart3,
 } from "lucide-react";
 import { getAccounts } from "@/lib/api/accounts";
 import { getTransactions } from "@/lib/api/transactions";
@@ -27,10 +28,12 @@ import {
 } from "@/lib/utils/date-filter";
 import { CreateTransactionModal } from "@/components/dashboard/create-transaction-modal";
 import { ReconcileModal } from "@/components/dashboard/reconcile-modal";
+import { AppleTrendChart } from "@/components/dashboard/apple-trend-chart";
 import { Account } from "@/types/account";
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState("this_month");
+  const [viewMode, setViewMode] = useState<"bars" | "trend">("bars");
   const [createOpen, setCreateOpen] = useState(false);
   const [reconcile, setReconcile] = useState<Account | null>(null);
   const accountsQuery = useQuery({
@@ -163,34 +166,59 @@ export default function DashboardPage() {
           aria-label="Ringkasan periode"
         >
           <div className="monthly-heading">
-            <label className="sr-only" htmlFor="overview-period">
-              Periode transaksi
-            </label>
-            <select
-              id="overview-period"
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-            >
-              <optgroup label="Periode">
-                <option value="this_month">
-                  {getDateRangeForPeriod("this_month").label}
-                </option>
-                <option value="last_month">Bulan lalu</option>
-                <option value="today">Hari ini</option>
-                <option value="this_week">Minggu ini</option>
-                <option value="last_week">Minggu lalu</option>
-                <option value="all_time">Semua waktu</option>
-              </optgroup>
-              {months.length > 0 && (
-                <optgroup label="Riwayat bulanan">
-                  {months.map((month) => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
+            <div className="monthly-heading-inner">
+              <div>
+                <label className="sr-only" htmlFor="overview-period">
+                  Periode transaksi
+                </label>
+                <select
+                  id="overview-period"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                >
+                  <optgroup label="Periode">
+                    <option value="this_month">
+                      {getDateRangeForPeriod("this_month").label}
                     </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
+                    <option value="last_month">Bulan lalu</option>
+                    <option value="today">Hari ini</option>
+                    <option value="this_week">Minggu ini</option>
+                    <option value="last_week">Minggu lalu</option>
+                    <option value="all_time">Semua waktu</option>
+                  </optgroup>
+                  {months.length > 0 && (
+                    <optgroup label="Riwayat bulanan">
+                      {months.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+
+              <div className="panel-view-toggle">
+                <button
+                  type="button"
+                  className={viewMode === "bars" ? "active" : ""}
+                  onClick={() => setViewMode("bars")}
+                  title="Ringkasan Skala"
+                >
+                  <SlidersHorizontal size={13} />
+                  <span>Skala</span>
+                </button>
+                <button
+                  type="button"
+                  className={viewMode === "trend" ? "active" : ""}
+                  onClick={() => setViewMode("trend")}
+                  title="Grafik Tren Waktu"
+                >
+                  <BarChart3 size={13} />
+                  <span>Grafik</span>
+                </button>
+              </div>
+            </div>
           </div>
           {transactionsQuery.isPending ? (
             <div
@@ -205,7 +233,7 @@ export default function DashboardPage() {
             <p className="empty-state">
               Ringkasan belum tersedia. Coba muat ulang.
             </p>
-          ) : (
+          ) : viewMode === "bars" ? (
             <>
               <div className="comparison-row">
                 <div>
@@ -231,6 +259,32 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
+              <div className="cashflow-note">
+                <span
+                  className={
+                    summary.net_cashflow < 0
+                      ? "cashflow-dot expense-bar"
+                      : "cashflow-dot income-bar"
+                  }
+                />
+                <div>
+                  <p>
+                    {summary.net_cashflow < 0
+                      ? "Pengeluaran lebih besar"
+                      : summary.net_cashflow > 0
+                        ? "Pemasukan lebih besar"
+                        : "Pemasukan dan pengeluaran seimbang"}
+                  </p>
+                  <strong>{formatIDR(Math.abs(summary.net_cashflow))}</strong>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <AppleTrendChart
+                transactions={transactions}
+                period={period}
+              />
               <div className="cashflow-note">
                 <span
                   className={
