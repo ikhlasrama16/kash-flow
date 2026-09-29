@@ -72,7 +72,7 @@ export function RecentTransactions({
             {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
-                className="h-14 rounded-xl bg-slate-100 dark:bg-white/5 animate-pulse"
+                className="skeleton-block h-14 rounded-xl"
               />
             ))}
           </div>

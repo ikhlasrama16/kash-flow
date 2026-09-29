@@ -121,6 +121,7 @@ body {
   --app-selected: #e1eafb;
   --app-icon: #f0f0f4;
   --app-orange: #f99542;
+  --app-expense: #d92d3a;
 }
 .dark {
   --background: #171719;
@@ -133,6 +134,7 @@ body {
   --app-selected: #243751;
   --app-icon: #333337;
   --app-orange: #ffab67;
+  --app-expense: #ff6572;
 }
 body {
   font-family:
@@ -553,7 +555,7 @@ button:disabled {
   transition: height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .apple-bar-fill.expense {
-  background: var(--app-orange);
+  background: var(--app-expense);
 }
 .apple-bar-fill.income {
   background: #5297f5;
@@ -592,7 +594,7 @@ button:disabled {
   background: #5297f5;
 }
 .legend-dot.expense {
-  background: var(--app-orange);
+  background: var(--app-expense);
 }
 
 .comparison-row {
@@ -632,7 +634,7 @@ button:disabled {
   background: #5297f5;
 }
 .expense-bar {
-  background: var(--app-orange);
+  background: var(--app-expense);
 }
 .cashflow-note {
   border-top: 1px solid var(--app-line);
@@ -834,9 +836,16 @@ button:disabled {
   cursor: pointer;
 }
 .skeleton-block {
-  background: var(--app-icon);
+  background-color: var(--app-icon);
+  background-image: linear-gradient(
+    105deg,
+    transparent 25%,
+    color-mix(in srgb, var(--foreground) 8%, transparent) 48%,
+    transparent 72%
+  );
+  background-size: 220% 100%;
   border-radius: 10px;
-  animation: pulse 2s ease-in-out infinite;
+  animation: skeleton-shimmer 1.45s ease-in-out infinite;
 }
 .balance-skeleton {
   width: 80%;
@@ -1307,6 +1316,9 @@ button:disabled {
   height: 72px;
   border-radius: 18px;
 }
+.list-skeleton .skeleton-block:nth-child(2) { animation-delay: 100ms; }
+.list-skeleton .skeleton-block:nth-child(3) { animation-delay: 200ms; }
+.list-skeleton .skeleton-block:nth-child(4) { animation-delay: 300ms; }
 /* Transactions / Activity styles */
 .transaction-filters-surface {
   padding: 18px 20px;
@@ -1508,8 +1520,8 @@ button:disabled {
   background: color-mix(in srgb, var(--app-blue) 12%, transparent);
 }
 .stat-card-icon.expense {
-  color: var(--app-orange);
-  background: color-mix(in srgb, var(--app-orange) 12%, transparent);
+  color: var(--app-expense);
+  background: color-mix(in srgb, var(--app-expense) 12%, transparent);
 }
 .stat-card-icon.neutral {
   color: var(--app-text);
@@ -1951,10 +1963,12 @@ button:disabled {
 .chart-grid-line { stroke: var(--app-line); stroke-width: 1; stroke-dasharray: 3 6; }
 .cashflow-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .cashflow-line.income { stroke: var(--app-blue); }
-.cashflow-line.expense { stroke: var(--app-orange); }
+.cashflow-line.expense { stroke: var(--app-expense); }
 .cashflow-line-point { cursor: crosshair; }
 .income-point { fill: var(--app-surface); stroke: var(--app-blue); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.expense-point { fill: var(--app-surface); stroke: var(--app-orange); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.expense-point { fill: var(--app-surface); stroke: var(--app-expense); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.expense-text { color: var(--app-expense); }
+.monthly-panel .comparison-row:nth-of-type(2) > div:first-child strong { color: var(--app-expense); }
 .cashflow-line-labels { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; color: var(--app-muted); font-size: 10px; text-align: center; }
 .inspection-values .income { color: var(--app-blue); }
 .notification-status { display: inline-flex; align-items: center; padding: 4px 9px; border: 1px solid var(--app-line); border-radius: 999px; background: var(--app-icon); color: var(--app-muted); font-size: 11px; white-space: nowrap; }
@@ -1962,6 +1976,33 @@ button:disabled {
 .notification-card.status-failed .notification-status { color: var(--app-orange); background: color-mix(in srgb, var(--app-orange) 11%, transparent); border-color: color-mix(in srgb, var(--app-orange) 22%, transparent); }
 .notification-card .notification-tags > .inline-flex:first-child { background: var(--app-icon); border-color: var(--app-line); color: var(--app-muted); font-family: inherit; font-size: 11px; letter-spacing: 0; }
 .notification-search input:focus-visible,.notification-date-fields input:focus-visible { outline: 3px solid var(--app-blue); outline-offset: 2px; }
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 130% 0; }
+  100% { background-position: -130% 0; }
+}
+@keyframes content-enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-transition { animation: content-enter .32s cubic-bezier(.2,.7,.25,1) both; }
+.overview { animation: content-enter .34s cubic-bezier(.2,.7,.25,1) both; }
+.finance-page > * { animation: content-enter .34s cubic-bezier(.2,.7,.25,1) both; }
+.finance-page > *:nth-child(2) { animation-delay: 35ms; }
+.finance-page > *:nth-child(3) { animation-delay: 70ms; }
+.finance-page > *:nth-child(4) { animation-delay: 105ms; }
+.activity-list > *,
+.account-groups article,
+.category-groups article,
+.notification-card { animation: content-enter .3s cubic-bezier(.2,.7,.25,1) both; }
+.activity-list > *:nth-child(2),
+.notification-list > *:nth-child(2) { animation-delay: 35ms; }
+.activity-list > *:nth-child(3),
+.notification-list > *:nth-child(3) { animation-delay: 70ms; }
+.notification-list > *:nth-child(4) { animation-delay: 105ms; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
 
 /* Ingest log follows the same finance surfaces, controls and spacing. */
 .notification-page { gap: 22px; }

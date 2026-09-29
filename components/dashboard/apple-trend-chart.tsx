@@ -269,7 +269,7 @@ export function AppleTrendChart({ transactions, period }: AppleTrendChartProps) 
             </>
           ) : peakExpense ? (
             <span>
-              Puncak: <strong style={{ color: "var(--app-orange)", fontWeight: 600 }}>{peakExpense.shortLabel}</strong> ({formatIDR(peakExpense.expense)})
+              Puncak: <strong style={{ color: "var(--app-expense)", fontWeight: 600 }}>{peakExpense.shortLabel}</strong> ({formatIDR(peakExpense.expense)})
             </span>
           ) : (
             <span>Arahkan garis untuk rincian</span>

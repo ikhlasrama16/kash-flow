@@ -12,17 +12,16 @@ interface AnimatedNumberProps {
 
 export function AnimatedNumber({
   value,
-  durationMs = 400,
+  durationMs = 700,
   className,
   showSign = false,
 }: AnimatedNumberProps) {
-  const [displayValue, setDisplayValue] = useState(value);
-  const prevValueRef = useRef(value);
+  const [displayValue, setDisplayValue] = useState(0);
+  const currentValueRef = useRef(0);
 
   useEffect(() => {
-    const startValue = prevValueRef.current;
+    const startValue = currentValueRef.current;
     const diff = value - startValue;
-    prevValueRef.current = value;
 
     if (diff === 0) return;
 
@@ -31,7 +30,10 @@ export function AnimatedNumber({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReducedMotion || durationMs <= 0) {
-      const timeoutId = setTimeout(() => setDisplayValue(value), 0);
+      const timeoutId = setTimeout(() => {
+        currentValueRef.current = value;
+        setDisplayValue(value);
+      }, 0);
       return () => clearTimeout(timeoutId);
     }
 
@@ -43,16 +45,17 @@ export function AnimatedNumber({
       const easeOutProgress = 1 - Math.pow(1 - progress, 4);
       const current = Math.round(startValue + diff * easeOutProgress);
 
+      currentValueRef.current = current;
       setDisplayValue(current);
 
       if (progress < 1) {
-        requestAnimationFrame(updateCounter);
+        animId = requestAnimationFrame(updateCounter);
       } else {
         setDisplayValue(value);
       }
     };
 
-    const animId = requestAnimationFrame(updateCounter);
+    let animId = requestAnimationFrame(updateCounter);
     return () => cancelAnimationFrame(animId);
   }, [value, durationMs]);
 

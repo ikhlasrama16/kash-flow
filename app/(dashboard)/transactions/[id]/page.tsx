@@ -41,8 +41,8 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
   if (isLoading) {
     return (
       <div className="space-y-4 max-w-2xl mx-auto py-8">
-        <div className="h-8 w-40 bg-slate-200 dark:bg-white/5 rounded-xl animate-pulse" />
-        <div className="h-64 bg-slate-200 dark:bg-white/5 rounded-2xl animate-pulse" />
+        <div className="skeleton-block h-8 w-40 rounded-xl" />
+        <div className="skeleton-block h-64 rounded-2xl" />
       </div>
     );
   }

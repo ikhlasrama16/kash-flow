@@ -4,7 +4,7 @@ import React from "react";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full transition-opacity duration-200 opacity-100">
+    <div className="page-transition w-full">
       {children}
     </div>
   );

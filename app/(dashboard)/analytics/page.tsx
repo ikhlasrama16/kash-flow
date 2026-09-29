@@ -435,7 +435,7 @@ export function AnalyticsPage() {
               <TrendingDown size={18} />
             </div>
           </div>
-          <div className="stat-card-value" style={{ color: "var(--app-orange)" }}>
+          <div className="stat-card-value" style={{ color: "var(--app-expense)" }}>
             {statsLoading ? (
               <div className="h-8 w-32 bg-black/[0.06] dark:bg-white/[0.08] rounded-lg animate-pulse" />
             ) : (
@@ -480,7 +480,7 @@ export function AnalyticsPage() {
             style={{
               color:
                 (summary?.net_cashflow || 0) < 0
-                  ? "var(--app-orange)"
+                  ? "var(--app-expense)"
                   : "var(--app-text)",
             }}
           >

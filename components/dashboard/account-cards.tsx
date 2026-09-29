@@ -42,7 +42,7 @@ export function AccountCards({ accounts, onReconcile, isLoading }: AccountCardsP
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-24 rounded-xl bg-slate-100 dark:bg-white/5 animate-pulse"
+                className="skeleton-block h-24 rounded-xl"
               />
             ))}
           </div>

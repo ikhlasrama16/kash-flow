@@ -143,7 +143,9 @@ export function TransactionTable({
                       className={`font-semibold tabular-nums text-sm ${
                         tx.type === "income"
                           ? "income-text"
-                          : "text-[var(--foreground)]"
+                          : tx.type === "expense"
+                            ? "expense-text"
+                            : "text-[var(--foreground)]"
                       }`}
                     >
                       {tx.type === "income"
@@ -200,7 +202,7 @@ export function TransactionTable({
                 </span>
               </div>
 
-              <strong className={`activity-amount ${tx.type === "income" ? "income-text" : ""}`}>
+                <strong className={`activity-amount ${tx.type === "income" ? "income-text" : tx.type === "expense" ? "expense-text" : ""}`}>
                 {tx.type === "income"
                   ? `+${formatIDR(tx.amount)}`
                   : tx.type === "expense"
