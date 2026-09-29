@@ -272,7 +272,7 @@ export function AppleTrendChart({ transactions, period }: AppleTrendChartProps) 
               Puncak: <strong style={{ color: "var(--app-orange)", fontWeight: 600 }}>{peakExpense.shortLabel}</strong> ({formatIDR(peakExpense.expense)})
             </span>
           ) : (
-            <span>Sentuh batang untuk rincian</span>
+            <span>Arahkan garis untuk rincian</span>
           )}
 
           {/* Granularity switch for monthly view */}
@@ -297,49 +297,34 @@ export function AppleTrendChart({ transactions, period }: AppleTrendChartProps) 
         </div>
       </div>
 
-      {/* 2. Apple Ghost Track Capsule Bars */}
-      <div className={`apple-bars-row ${granularity === "daily" ? "dense" : ""}`}>
-        {buckets.map((b) => {
-          const isCurrentActive = activeItem?.key === b.key;
-          const expHeight = b.expense > 0 ? Math.max(8, (b.expense / maxScale) * 100) : 0;
-          const incHeight = b.income > 0 ? Math.max(8, (b.income / maxScale) * 100) : 0;
-
-          return (
-            <div
-              key={b.key}
-              className={`apple-bar-slot ${isCurrentActive ? "active" : ""}`}
-              onMouseEnter={() => setHovered(b)}
-              onMouseLeave={() => setHovered(null)}
-              onClick={() => setHovered(b)}
-            >
-              <div className="apple-bar-track-wrap">
-                {/* Income Ghost Track */}
-                <div className="apple-bar-ghost income">
-                  {incHeight > 0 && (
-                    <span
-                      className="apple-bar-fill income"
-                      style={{ height: `${incHeight}%` }}
-                    />
-                  )}
-                </div>
-
-                {/* Expense Ghost Track */}
-                <div className="apple-bar-ghost expense">
-                  {expHeight > 0 && (
-                    <span
-                      className="apple-bar-fill expense"
-                      style={{ height: `${expHeight}%` }}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {b.shortLabel && (
-                <span className="apple-bar-label">{b.shortLabel}</span>
-              )}
-            </div>
-          );
-        })}
+      {/* Two calm lines compare daily/weekly income and expense. */}
+      <div className="cashflow-line-chart" role="img" aria-label="Grafik garis pemasukan dan pengeluaran">
+        <svg viewBox="0 0 640 220" preserveAspectRatio="none" aria-hidden="true">
+          {[0, 1, 2, 3].map((line) => {
+            const y = 20 + line * 48;
+            return <line key={line} x1="34" x2="624" y1={y} y2={y} className="chart-grid-line" />;
+          })}
+          {buckets.length > 1 && (["income", "expense"] as const).map((kind) => {
+            const points = buckets.map((bucket, index) => {
+              const x = 36 + index * (586 / (buckets.length - 1));
+              const amount = bucket[kind];
+              const y = 164 - (amount / maxScale) * 132;
+              return `${x},${y}`;
+            }).join(" ");
+            return <polyline key={kind} points={points} className={`cashflow-line ${kind}`} />;
+          })}
+          {buckets.map((bucket, index) => {
+            const x = buckets.length > 1 ? 36 + index * (586 / (buckets.length - 1)) : 329;
+            const isActive = activeItem?.key === bucket.key;
+            return <g key={bucket.key} className="cashflow-line-point" onMouseEnter={() => setHovered(bucket)} onMouseLeave={() => setHovered(null)} onClick={() => setHovered(bucket)}>
+              <circle cx={x} cy={164 - (bucket.income / maxScale) * 132} r={isActive ? 5 : 3} className="income-point" />
+              <circle cx={x} cy={164 - (bucket.expense / maxScale) * 132} r={isActive ? 5 : 3} className="expense-point" />
+            </g>;
+          })}
+        </svg>
+        <div className="cashflow-line-labels">
+          {buckets.map((bucket) => <span key={bucket.key}>{bucket.shortLabel}</span>)}
+        </div>
       </div>
 
       {/* 3. Subtle Legend Indicator */}

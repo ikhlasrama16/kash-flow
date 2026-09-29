@@ -10,7 +10,7 @@ export default function CategoriesPage() {
   const [open,setOpen] = useState(false);
   const [type,setType] = useState<"all"|"income"|"expense">("all");
   const {data:categories = [],isPending,isError,refetch} = useQuery({queryKey:["categories"],queryFn:getCategories});
-  return <div className="finance-page"><PageHeader title="Kategori" description="Atur pemasukan dan pengeluaran agar mudah ditelusuri." actions={<AddAction onClick={() => setOpen(true)}>Tambah kategori</AddAction>} />
+  return <div className="finance-page categories-page"><PageHeader title="Kategori" description="Atur pemasukan dan pengeluaran agar mudah ditelusuri." actions={<AddAction onClick={() => setOpen(true)}>Tambah kategori</AddAction>} />
     <SegmentedControl label="Jenis kategori" value={type} onChange={setType} options={[{value:"all",label:`Semua (${categories.length})`},{value:"expense",label:"Pengeluaran"},{value:"income",label:"Pemasukan"}]} />
     {isError && <LoadError onRetry={() => void refetch()} />}
     {isPending ? <ListSkeleton /> : !categories.length && !isError ? <section className="surface"><EmptyState title="Belum ada kategori">Buat kategori untuk mengelompokkan transaksi.</EmptyState></section> : <div className="category-groups">{(["expense","income"] as const).filter(group => type === "all" || group === type).map(group => {

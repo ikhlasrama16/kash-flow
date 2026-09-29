@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PageHeader, AddAction } from "@/components/ui/finance";
+import { PageHeader, AddAction, LoadError } from "@/components/ui/finance";
 import {
   TransactionFilters,
   TransactionFilterState,
@@ -14,9 +15,7 @@ import { getTransactions } from "@/lib/api/transactions";
 import { getAccounts } from "@/lib/api/accounts";
 import { getCategories } from "@/lib/api/categories";
 import { isDateInDateRange } from "@/lib/utils/date-filter";
-import { Transaction } from "@/types/transaction";
-import { Account } from "@/types/account";
-import { Category } from "@/types/category";
+import type { Transaction } from "@/types/transaction";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -33,41 +32,42 @@ export default function TransactionsPage() {
   });
 
   const [page, setPage] = useState(1);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  // Native state with immediate useEffect fetch
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [txLoading, setTxLoading] = useState(true);
+  const {
+    data: transactionsData,
+    isPending: transactionsPending,
+    isError: transactionsError,
+    refetch: refetchTransactions,
+  } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: getTransactions,
+  });
+  const {
+    data: accountsData,
+    isError: accountsError,
+    refetch: refetchAccounts,
+  } = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
+  const {
+    data: categoriesData,
+    isError: categoriesError,
+    refetch: refetchCategories,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+  const transactions = useMemo(() => transactionsData ?? [], [transactionsData]);
+  const accounts = accountsData ?? [];
+  const categories = categoriesData ?? [];
+  const txLoading = transactionsPending;
 
-  const loadData = React.useCallback(() => {
-    setTxLoading(true);
-    Promise.all([
-      getTransactions().catch((err) => {
-        console.error("Failed to load transactions:", err);
-        return [] as Transaction[];
-      }),
-      getAccounts().catch((err) => {
-        console.error("Failed to load accounts:", err);
-        return [] as Account[];
-      }),
-      getCategories().catch((err) => {
-        console.error("Failed to load categories:", err);
-        return [] as Category[];
-      }),
-    ]).then(([txs, accs, cats]) => {
-      setTransactions(txs);
-      setAccounts(accs);
-      setCategories(cats);
-      setTxLoading(false);
-    });
-  }, []);
-
-  React.useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const loadData = useCallback(() => {
+    void refetchTransactions();
+    void refetchAccounts();
+    void refetchCategories();
+  }, [refetchTransactions, refetchAccounts, refetchCategories]);
 
   // Client-side filtering
   const filteredTransactions = useMemo(() => {
@@ -88,7 +88,10 @@ export default function TransactionsPage() {
       // Account
       if (filters.accountId) {
         const targetId = Number(filters.accountId);
-        if (tx.source_account_id !== targetId && tx.destination_account_id !== targetId) {
+        if (
+          tx.source_account_id !== targetId &&
+          tx.destination_account_id !== targetId
+        ) {
           return false;
         }
       }
@@ -107,7 +110,9 @@ export default function TransactionsPage() {
       }
 
       // Date Range
-      if (!isDateInDateRange(tx.occurred_at, filters.startDate, filters.endDate)) {
+      if (
+        !isDateInDateRange(tx.occurred_at, filters.startDate, filters.endDate)
+      ) {
         return false;
       }
 
@@ -116,24 +121,37 @@ export default function TransactionsPage() {
   }, [transactions, filters]);
 
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE),
+  );
   const paginatedTransactions = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return filteredTransactions.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredTransactions, page]);
 
   return (
-    <div className="finance-page">
+    <div className="finance-page transaction-page">
       {/* Header */}
       <PageHeader
         title="Aktivitas"
-        description={`Menampilkan ${filteredTransactions.length} riwayat pergerakan dana.`}
+        description={
+          txLoading
+            ? "Memuat pergerakan dana."
+            : `Menampilkan ${filteredTransactions.length} dari ${transactions.length} transaksi.`
+        }
         actions={
           <AddAction onClick={() => setCreateModalOpen(true)}>
             Catat transaksi
           </AddAction>
         }
       />
+
+      {(transactionsError || accountsError || categoriesError) && (
+        <LoadError onRetry={loadData}>
+          Sebagian data aktivitas belum berhasil dimuat. Coba muat ulang.
+        </LoadError>
+      )}
 
       {/* Filter controls */}
       <TransactionFilters
@@ -147,19 +165,22 @@ export default function TransactionsPage() {
       />
 
       {/* Table & Cards */}
-      <TransactionTable
-        transactions={paginatedTransactions}
-        accounts={accounts}
-        categories={categories}
-        onSelectTransaction={(tx) => setSelectedTransaction(tx)}
-        isLoading={txLoading}
-      />
+      {!transactionsError && (
+        <TransactionTable
+          transactions={paginatedTransactions}
+          accounts={accounts}
+          categories={categories}
+          onSelectTransaction={(tx) => setSelectedTransaction(tx)}
+          isLoading={txLoading}
+        />
+      )}
 
       {/* Pagination controls */}
       {filteredTransactions.length > ITEMS_PER_PAGE && (
         <div className="pagination-bar">
           <span>
-            Halaman {page} dari {totalPages} ({filteredTransactions.length} total)
+            Halaman {page} dari {totalPages} ({filteredTransactions.length}{" "}
+            total)
           </span>
           <div className="pagination-actions">
             <button

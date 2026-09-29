@@ -21,7 +21,7 @@ export default function AccountsPage() {
   const { data: accounts = [], isPending, isError, refetch } = useQuery({queryKey:["accounts"],queryFn:getAccounts});
   const active = accounts.filter(a => a.is_active);
   const total = active.reduce((sum,a) => sum + Number(a.balance || 0),0);
-  return <div className="finance-page">
+  return <div className="finance-page accounts-page">
     <PageHeader title="Rekening" description="Semua tempat kamu menyimpan uang." actions={<AddAction onClick={() => setCreateOpen(true)}>Tambah rekening</AddAction>} />
     {isError && <LoadError onRetry={() => void refetch()} />}
     <section className="account-total" aria-label="Total saldo"><p>Saldo tersedia</p>{isPending ? <div className="skeleton-block balance-skeleton" /> : <strong>{isError && !accounts.length ? "Belum tersedia" : formatIDR(total)}</strong>}<span>{active.length} rekening aktif{accounts.length > active.length ? ` · ${accounts.length - active.length} nonaktif` : ""}</span></section>

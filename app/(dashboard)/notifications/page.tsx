@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Bell,
   RefreshCw,
-  Send,
   Smartphone,
   ArrowRight,
   AlertCircle,
@@ -15,10 +13,8 @@ import {
   Calendar,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { NotificationStatusBadge, Badge } from "@/components/ui/badge";
+import { PageHeader, AddAction, LoadError } from "@/components/ui/finance";
+import { Badge } from "@/components/ui/badge";
 import { PageTransition } from "@/components/react-bits/page-transition";
 import { TestNotificationModal } from "@/components/notifications/test-notification-modal";
 import { getNotifications } from "@/lib/api/notifications";
@@ -48,6 +44,14 @@ const PRESETS: { key: DatePresetKey; label: string }[] = [
   { key: "custom", label: "Kustom" },
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  parsed: "Berhasil diparse",
+  pending: "Menunggu",
+  ignored: "Diabaikan",
+  failed: "Gagal",
+  detached: "Terlepas",
+};
+
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
   const [testModalOpen, setTestModalOpen] = useState(false);
@@ -59,7 +63,7 @@ export default function NotificationsPage() {
 
   const todayMax = getJakartaDateString();
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["notifications"],
     queryFn: getNotifications,
   });
@@ -77,7 +81,7 @@ export default function NotificationsPage() {
 
   const handleCustomDateChange = (start: string, end: string) => {
     let newStart = start;
-    let newEnd = end;
+    const newEnd = end;
     if (newStart && newEnd && newStart > newEnd) {
       newStart = newEnd;
     }
@@ -130,73 +134,41 @@ export default function NotificationsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
-                <Bell className="w-5 h-5" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Log Ingest Notifikasi
-              </h1>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Menampilkan {filteredNotifications.length} dari {notifications.length} riwayat notifikasi finansial
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["notifications"] })}
-              className="text-xs"
-              title="Perbarui daftar"
-            >
-              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-              <span>Muat Ulang</span>
-            </Button>
-            <Button
-              variant="emerald"
-              size="sm"
-              onClick={() => setTestModalOpen(true)}
-              className="text-xs font-semibold shadow-md shadow-emerald-500/20"
-            >
-              <Send className="w-3.5 h-3.5 mr-1" />
-              <span>Uji Ingest Notifikasi</span>
-            </Button>
-          </div>
-        </div>
+      <div className="finance-page notification-page">
+        <PageHeader
+          title="Log ingest"
+          description={`Menampilkan ${filteredNotifications.length} dari ${notifications.length} notifikasi finansial.`}
+          actions={<>
+            <button type="button" className="secondary-action" onClick={() => void queryClient.invalidateQueries({ queryKey: ["notifications"] })} title="Perbarui daftar"><RefreshCw size={16} /><span>Muat ulang</span></button>
+            <AddAction onClick={() => setTestModalOpen(true)}>Uji ingest notifikasi</AddAction>
+          </>}
+        />
+        {isError && <LoadError onRetry={() => void refetch()}>Riwayat notifikasi belum berhasil dimuat.</LoadError>}
 
         {/* Filter Card */}
-        <div className="space-y-3 bg-white dark:bg-[#0e1422] p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs">
+        <div className="surface notification-filters">
           {/* Row 1: Search & Status Tabs */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             {/* Search Input */}
-            <div className="relative flex-1">
+            <label className="notification-search">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
+              <input
+                type="search"
                 placeholder="Cari aplikasi, pesan, parser, ID..."
+                aria-label="Cari notifikasi"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10"
               />
-            </div>
+            </label>
 
             {/* Status Pills */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200/60 dark:border-white/5 shrink-0 overflow-x-auto">
+            <div className="segmented-control notification-status-tabs" role="group" aria-label="Status notifikasi">
               {STATUS_TABS.map((t) => (
                 <button
                   key={t.value}
                   type="button"
                   onClick={() => setStatusFilter(t.value)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                    statusFilter === t.value
-                      ? "bg-white dark:bg-[#161e31] text-slate-900 dark:text-white shadow-xs font-semibold"
-                      : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                  }`}
+                  aria-pressed={statusFilter === t.value}
                 >
                   {t.label}
                 </button>
@@ -205,10 +177,10 @@ export default function NotificationsPage() {
           </div>
 
           {/* Row 2: Date Range Section */}
-          <div className="pt-2 border-t border-slate-100 dark:border-white/5 space-y-2">
+          <div className="notification-date-row">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
               {/* Presets */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200/60 dark:border-white/5 overflow-x-auto">
+              <div className="segmented-control notification-date-tabs" role="group" aria-label="Periode notifikasi">
                 {PRESETS.map((p) => {
                   const isActive = datePreset === p.key;
                   return (
@@ -216,11 +188,7 @@ export default function NotificationsPage() {
                       key={p.key}
                       type="button"
                       onClick={() => handlePresetSelect(p.key)}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                        isActive
-                          ? "bg-white dark:bg-[#161e31] text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold"
-                          : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                      }`}
+                      aria-pressed={isActive}
                     >
                       {p.label}
                     </button>
@@ -229,7 +197,7 @@ export default function NotificationsPage() {
               </div>
 
               {/* Date Pickers */}
-              <div className="flex items-center gap-2 flex-wrap">
+              {datePreset === "custom" && <div className="notification-date-fields">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-400 font-medium">Dari:</span>
                   <input
@@ -237,7 +205,7 @@ export default function NotificationsPage() {
                     max={todayMax}
                     value={startDate}
                     onChange={(e) => handleCustomDateChange(e.target.value, endDate)}
-                    className="px-2.5 py-1 h-8 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] text-slate-900 dark:text-slate-200 text-xs outline-hidden focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                    aria-label="Tanggal mulai"
                   />
                 </div>
 
@@ -251,31 +219,31 @@ export default function NotificationsPage() {
                     min={startDate || undefined}
                     value={endDate}
                     onChange={(e) => handleCustomDateChange(startDate, e.target.value)}
-                    className="px-2.5 py-1 h-8 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#090d16] text-slate-900 dark:text-slate-200 text-xs outline-hidden focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                    aria-label="Tanggal akhir"
                   />
                 </div>
-              </div>
+              </div>}
             </div>
 
             {(startDate || endDate) && (
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="notification-active-range">
                 <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Rentang Aktif:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <strong>
                   {startDate ? formatIDDate(startDate) : "Awal"} — {endDate ? formatIDDate(endDate) : "Sekarang"}
-                </span>
+                </strong>
               </div>
             )}
           </div>
 
           {/* Reset Filter Action */}
           {isFiltered && (
-            <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
-              <span>Filter diterapkan ({filteredNotifications.length} ditemukan)</span>
+            <div className="notification-filter-summary">
+              <span>{filteredNotifications.length} notifikasi sesuai filter</span>
               <button
                 type="button"
                 onClick={handleReset}
-                className="flex items-center gap-1 text-rose-500 hover:text-rose-600 font-medium cursor-pointer"
+                className="filter-reset-btn"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Reset Filter</span>
@@ -286,88 +254,87 @@ export default function NotificationsPage() {
 
         {/* List of Notifications */}
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="notification-skeletons">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-28 rounded-2xl bg-white dark:bg-[#0e1422] border border-slate-200/80 dark:border-white/10 animate-pulse"
+                className="notification-skeleton skeleton-block"
               />
             ))}
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#0e1422]">
+          <div className="surface notification-empty">
             <Smartphone className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Belum ada log notifikasi
+            <h3>
+              {isError ? "Notifikasi belum tersedia" : isFiltered ? "Tidak ada notifikasi yang cocok" : "Belum ada log notifikasi"}
             </h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-              Notifikasi yang dikirim oleh MacroDroid ke endpoint POST /api/v1/notifications akan
-              tersimpan di sini.
+            <p>
+              {isError
+                ? "Coba muat ulang untuk melihat riwayat notifikasi."
+                : isFiltered
+                  ? "Coba ubah pencarian, status, atau periode tanggal."
+                  : "Notifikasi dari MacroDroid yang masuk melalui endpoint ingest akan tersimpan di sini."}
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="notification-list">
             {filteredNotifications.map((notif) => (
-              <Card
+              <article
                 key={notif.id}
-                className="border-slate-200/80 dark:border-white/10 p-4 hover:border-emerald-500/30 transition-all space-y-2.5"
+                className={`surface notification-card status-${notif.status}`}
               >
                 {/* Header row: App badge, Status, Timestamp */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="notification-tags">
                     <Badge variant="outline" className="font-mono text-[10px]">
                       {notif.source_app}
                     </Badge>
-                    <NotificationStatusBadge status={notif.status} />
-                    {notif.parser_name && (
-                      <span className="text-[10px] text-slate-400">
-                        via <span className="font-medium text-slate-300">{notif.parser_name}</span>
-                      </span>
-                    )}
+                    <span className="notification-status">{STATUS_LABELS[notif.status] ?? notif.status}</span>
+                    {notif.parser_name && <span className="notification-parser">via {notif.parser_name}</span>}
                   </div>
 
-                  <span className="text-[11px] text-slate-400 shrink-0">
+                  <span className="notification-timestamp">
                     {formatRelativeTime(notif.received_at)} ({formatDateTime(notif.received_at)})
                   </span>
                 </div>
 
                 {/* Content: Title & Body */}
-                <div className="space-y-1">
+                <div className="notification-content">
                   {notif.title && (
-                    <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                    <div className="notification-title">
                       {notif.title}
                     </div>
                   )}
-                  <div className="text-xs text-slate-600 dark:text-slate-300 font-mono bg-slate-50 dark:bg-black/20 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 break-words">
+                  <div className="notification-body">
                     {notif.body}
                   </div>
                 </div>
 
                 {/* Footer: Error message or Linked transaction */}
-                <div className="flex items-center justify-between text-xs pt-1">
+                <div className="notification-footer">
                   {notif.error_message ? (
-                    <div className="flex items-center gap-1.5 text-rose-500 text-[11px]">
+                    <div className="notification-error">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{notif.error_message}</span>
                     </div>
                   ) : notif.transaction_id ? (
                     <Link
                       href={`/transactions/${notif.transaction_id}`}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                      className="notification-transaction-link"
                     >
                       <CheckCircle className="w-3.5 h-3.5" />
                       <span>Terhubung ke Transaksi #{notif.transaction_id}</span>
                       <ArrowRight className="w-3 h-3" />
                     </Link>
                   ) : (
-                    <div className="text-[11px] text-slate-400">Tidak menghasilkan transaksi</div>
+                    <div className="notification-no-transaction">Tidak menghasilkan transaksi</div>
                   )}
 
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <span className="notification-id">
                     ID #{notif.id}
                   </span>
                 </div>
-              </Card>
+              </article>
             ))}
           </div>
         )}

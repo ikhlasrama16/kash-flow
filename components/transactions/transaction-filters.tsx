@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
-import { Search, X, Calendar } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Calendar, ChevronDown, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Account } from "@/types/account";
-import { Category } from "@/types/category";
-import { TransactionType } from "@/types/transaction";
+import type { Account } from "@/types/account";
+import type { Category } from "@/types/category";
+import type { TransactionType } from "@/types/transaction";
 import {
   DatePresetKey,
   getJakartaDateString,
@@ -32,13 +32,21 @@ interface TransactionFiltersProps {
 }
 
 const PRESETS: { key: DatePresetKey; label: string }[] = [
-  { key: "all", label: "Semua Waktu" },
-  { key: "today", label: "Hari Ini" },
+  { key: "all", label: "Semua waktu" },
+  { key: "today", label: "Hari ini" },
   { key: "yesterday", label: "Kemarin" },
-  { key: "this_week", label: "Minggu Ini" },
-  { key: "this_month", label: "Bulan Ini" },
-  { key: "custom", label: "Kustom" },
+  { key: "this_week", label: "Minggu ini" },
+  { key: "this_month", label: "Bulan ini" },
+  { key: "custom", label: "Pilih tanggal" },
 ];
+
+const STATUS_LABELS: Record<string, string> = {
+  AUTO: "Otomatis",
+  RULE: "Aturan",
+  MANUAL: "Manual",
+  NEEDS_REVIEW: "Perlu ditinjau",
+  REPROCESS: "Diproses ulang",
+};
 
 export function TransactionFilters({
   filters,
@@ -47,8 +55,13 @@ export function TransactionFilters({
   categories,
 }: TransactionFiltersProps) {
   const todayMax = getJakartaDateString();
+  const [advancedOpen, setAdvancedOpen] = useState(
+    Boolean(filters.accountId || filters.categoryId || filters.parseStatus),
+  );
+  const patch = (updates: Partial<TransactionFilterState>) =>
+    onFilterChange({ ...filters, ...updates });
 
-  const handleReset = () => {
+  const reset = () =>
     onFilterChange({
       search: "",
       type: "all",
@@ -59,199 +72,297 @@ export function TransactionFilters({
       endDate: "",
       datePreset: "all",
     });
-  };
+
+  const advancedCount =
+    Number(Boolean(filters.accountId)) +
+    Number(Boolean(filters.categoryId)) +
+    Number(Boolean(filters.parseStatus));
+  const activeCount =
+    Number(Boolean(filters.search.trim())) +
+    Number(filters.type !== "all") +
+    Number(filters.datePreset !== "all") +
+    advancedCount;
+
+  const chips = useMemo(() => {
+    const result: { label: string; clear: Partial<TransactionFilterState> }[] =
+      [];
+    if (filters.search.trim())
+      result.push({
+        label: `Cari: ${filters.search.trim()}`,
+        clear: { search: "" },
+      });
+    if (filters.type !== "all")
+      result.push({
+        label:
+          filters.type === "expense"
+            ? "Pengeluaran"
+            : filters.type === "income"
+              ? "Pemasukan"
+              : "Transfer",
+        clear: { type: "all" },
+      });
+    if (filters.datePreset !== "all") {
+      const label =
+        filters.datePreset === "custom"
+          ? `${filters.startDate ? formatIDDate(filters.startDate) : "Awal"} sampai ${filters.endDate ? formatIDDate(filters.endDate) : "Sekarang"}`
+          : (PRESETS.find((preset) => preset.key === filters.datePreset)
+              ?.label ?? "Rentang tanggal");
+      result.push({
+        label,
+        clear: { datePreset: "all", startDate: "", endDate: "" },
+      });
+    }
+    if (filters.accountId) {
+      const account = accounts.find(
+        (item) => String(item.id) === filters.accountId,
+      );
+      result.push({
+        label: `Rekening: ${account?.name ?? "Dipilih"}`,
+        clear: { accountId: "" },
+      });
+    }
+    if (filters.categoryId) {
+      const category = categories.find(
+        (item) => String(item.id) === filters.categoryId,
+      );
+      result.push({
+        label: `Kategori: ${category?.name ?? "Dipilih"}`,
+        clear: { categoryId: "" },
+      });
+    }
+    if (filters.parseStatus) {
+      result.push({
+        label: `Status: ${STATUS_LABELS[filters.parseStatus] ?? filters.parseStatus}`,
+        clear: { parseStatus: "" },
+      });
+    }
+    return result;
+  }, [filters, accounts, categories]);
 
   const handlePresetSelect = (preset: DatePresetKey) => {
     if (preset === "custom") {
-      onFilterChange({
-        ...filters,
-        datePreset: "custom",
-      });
+      patch({ datePreset: preset });
       return;
     }
     const { startDate, endDate } = getPresetDates(preset);
-    onFilterChange({
-      ...filters,
-      datePreset: preset,
-      startDate,
-      endDate,
-    });
+    patch({ datePreset: preset, startDate, endDate });
   };
 
   const handleCustomDateChange = (start: string, end: string) => {
-    let newStart = start;
-    let newEnd = end;
-    if (newStart && newEnd && newStart > newEnd) {
-      newStart = newEnd;
-    }
-    onFilterChange({
-      ...filters,
-      datePreset: "custom",
-      startDate: newStart,
-      endDate: newEnd,
-    });
+    const orderedStart = start && end && start > end ? end : start;
+    patch({ datePreset: "custom", startDate: orderedStart, endDate: end });
   };
 
-  const isFiltered =
-    filters.search !== "" ||
-    filters.type !== "all" ||
-    filters.accountId !== "" ||
-    filters.categoryId !== "" ||
-    filters.parseStatus !== "" ||
-    Boolean(filters.startDate) ||
-    Boolean(filters.endDate) ||
-    filters.datePreset !== "all";
-
   return (
-    <div className="surface transaction-filters-surface">
-      {/* Search and Type Tabs */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--app-muted)]" />
-          <input
-            type="text"
-            placeholder="Cari merchant, toko, deskripsi..."
+    <section
+      className="surface transaction-filters-surface"
+      aria-label="Filter transaksi"
+    >
+      <div className="transaction-filter-primary">
+        <label className="transaction-search">
+          <Search aria-hidden="true" size={18} />
+          <Input
+            type="search"
+            aria-label="Cari transaksi"
+            placeholder="Cari transaksi, merchant, atau deskripsi"
             value={filters.search}
-            onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
-            className="filter-search-input"
+            onChange={(event) => patch({ search: event.target.value })}
           />
-        </div>
-
-        {/* Type pills */}
-        <div className="segmented-control shrink-0" role="group" aria-label="Tipe transaksi">
-          {(["all", "expense", "income", "transfer"] as const).map((t) => (
+          {filters.search && (
             <button
-              key={t}
+              className="filter-icon-button"
               type="button"
-              aria-pressed={filters.type === t}
-              onClick={() => onFilterChange({ ...filters, type: t })}
+              aria-label="Hapus pencarian"
+              onClick={() => patch({ search: "" })}
             >
-              {t === "all" ? "Semua" : t === "expense" ? "Pengeluaran" : t === "income" ? "Pemasukan" : "Transfer"}
+              <X size={17} />
+            </button>
+          )}
+        </label>
+        <div
+          className="segmented-control transaction-type-control"
+          role="group"
+          aria-label="Jenis transaksi"
+        >
+          {(["all", "expense", "income", "transfer"] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              aria-pressed={filters.type === type}
+              onClick={() => patch({ type })}
+            >
+              {type === "all"
+                ? "Semua"
+                : type === "expense"
+                  ? "Pengeluaran"
+                  : type === "income"
+                    ? "Pemasukan"
+                    : "Transfer"}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Date Range Filter Section */}
-      <div className="pt-2 border-t border-[var(--app-line)] space-y-2">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-          {/* Preset Buttons */}
-          <div className="segmented-control shrink-0 max-w-full overflow-x-auto" role="group" aria-label="Rentang tanggal">
-            {PRESETS.map((p) => {
-              const isActive = filters.datePreset === p.key;
-              return (
-                <button
-                  key={p.key}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => handlePresetSelect(p.key)}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Date Pickers */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[12px] text-[var(--app-muted)] font-medium">Dari:</span>
-              <input
-                type="date"
-                max={todayMax}
-                value={filters.startDate || ""}
-                onChange={(e) => handleCustomDateChange(e.target.value, filters.endDate)}
-                className="filter-date-input"
-              />
-            </div>
-
-            <span className="text-[var(--app-muted)] text-xs">s/d</span>
-
-            <div className="flex items-center gap-1.5">
-              <span className="text-[12px] text-[var(--app-muted)] font-medium">Sampai:</span>
-              <input
-                type="date"
-                max={todayMax}
-                min={filters.startDate || undefined}
-                value={filters.endDate || ""}
-                onChange={(e) => handleCustomDateChange(filters.startDate, e.target.value)}
-                className="filter-date-input"
-              />
-            </div>
-          </div>
+      <div className="transaction-filter-period">
+        <div className="transaction-filter-heading">
+          <span>Periode transaksi</span>
+          {filters.datePreset === "custom" &&
+            (filters.startDate || filters.endDate) && (
+              <span className="transaction-custom-range">
+                <Calendar size={15} aria-hidden="true" />
+                {filters.startDate
+                  ? formatIDDate(filters.startDate)
+                  : "Awal"}{" "}
+                sampai{" "}
+                {filters.endDate ? formatIDDate(filters.endDate) : "Sekarang"}
+              </span>
+            )}
         </div>
-
-        {(filters.startDate || filters.endDate) && (
-          <div className="flex items-center gap-1.5 text-[12px] text-[var(--app-muted)]">
-            <Calendar className="w-3.5 h-3.5 text-[var(--app-blue)]" />
-            <span>Rentang Aktif:</span>
-            <span className="font-semibold text-[var(--foreground)]">
-              {filters.startDate ? formatIDDate(filters.startDate) : "Awal"} — {filters.endDate ? formatIDDate(filters.endDate) : "Sekarang"}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Dropdown Filters (Account, Category, Status) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-        {/* Account Filter */}
-        <select
-          value={filters.accountId}
-          onChange={(e) => onFilterChange({ ...filters, accountId: e.target.value })}
-          className="filter-select"
-        >
-          <option value="">Semua Rekening</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name} ({a.provider || a.type})
-            </option>
-          ))}
-        </select>
-
-        {/* Category Filter */}
-        <select
-          value={filters.categoryId}
-          onChange={(e) => onFilterChange({ ...filters, categoryId: e.target.value })}
-          className="filter-select"
-        >
-          <option value="">Semua Kategori</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} ({c.type})
-            </option>
-          ))}
-        </select>
-
-        {/* Status Filter */}
-        <select
-          value={filters.parseStatus}
-          onChange={(e) => onFilterChange({ ...filters, parseStatus: e.target.value })}
-          className="filter-select"
-        >
-          <option value="">Semua Status Parser</option>
-          <option value="AUTO">AUTO</option>
-          <option value="RULE">RULE</option>
-          <option value="MANUAL">MANUAL</option>
-          <option value="NEEDS_REVIEW">NEEDS_REVIEW</option>
-          <option value="REPROCESS">REPROCESS</option>
-        </select>
-      </div>
-
-      {/* Reset filter badge */}
-      {isFiltered && (
-        <div className="flex items-center justify-between pt-1 text-xs text-[var(--app-muted)]">
-          <span>Filter diterapkan</span>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="filter-reset-btn"
+        <div className="transaction-period-row">
+          <div
+            className="segmented-control transaction-date-presets"
+            role="group"
+            aria-label="Periode cepat"
           >
-            <X className="w-3.5 h-3.5" />
-            <span>Reset Filter</span>
+            {PRESETS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={filters.datePreset === key}
+                onClick={() => handlePresetSelect(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {filters.datePreset === "custom" && (
+            <div className="transaction-date-fields">
+              <label>
+                <span>Dari</span>
+                <input
+                  type="date"
+                  aria-label="Tanggal mulai"
+                  max={filters.endDate || todayMax}
+                  value={filters.startDate}
+                  onChange={(event) =>
+                    handleCustomDateChange(event.target.value, filters.endDate)
+                  }
+                />
+              </label>
+              <label>
+                <span>Sampai</span>
+                <input
+                  type="date"
+                  aria-label="Tanggal akhir"
+                  min={filters.startDate || undefined}
+                  max={todayMax}
+                  value={filters.endDate}
+                  onChange={(event) =>
+                    handleCustomDateChange(
+                      filters.startDate,
+                      event.target.value,
+                    )
+                  }
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <details
+        className="transaction-advanced-filter"
+        open={advancedOpen}
+        onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>Filter lainnya</span>
+          {advancedCount > 0 && (
+            <span className="filter-count">{advancedCount} dipilih</span>
+          )}
+          <ChevronDown
+            className="filter-advanced-chevron"
+            size={17}
+            aria-hidden="true"
+          />
+        </summary>
+        <div className="transaction-filter-selects">
+          <label>
+            <span>Rekening</span>
+            <select
+              aria-label="Filter berdasarkan rekening"
+              value={filters.accountId}
+              onChange={(event) => patch({ accountId: event.target.value })}
+              className="filter-select"
+            >
+              <option value="">Semua rekening</option>
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name} ({account.provider || account.type})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Kategori</span>
+            <select
+              aria-label="Filter berdasarkan kategori"
+              value={filters.categoryId}
+              onChange={(event) => patch({ categoryId: event.target.value })}
+              className="filter-select"
+            >
+              <option value="">Semua kategori</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name} (
+                  {category.type === "income" ? "pemasukan" : "pengeluaran"})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Status pencatatan</span>
+            <select
+              aria-label="Filter berdasarkan status pencatatan"
+              value={filters.parseStatus}
+              onChange={(event) => patch({ parseStatus: event.target.value })}
+              className="filter-select"
+            >
+              <option value="">Semua status</option>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </details>
+
+      {activeCount > 0 && (
+        <div
+          className="transaction-active-filters"
+          aria-label={`${activeCount} filter aktif`}
+        >
+          <div className="transaction-filter-chips">
+            {chips.map((chip) => (
+              <button
+                type="button"
+                className="transaction-filter-chip"
+                key={chip.label}
+                aria-label={`Hapus filter ${chip.label}`}
+                onClick={() => patch(chip.clear)}
+              >
+                <span>{chip.label}</span>
+                <X size={14} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+          <button className="filter-reset-btn" type="button" onClick={reset}>
+            Hapus semua
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }

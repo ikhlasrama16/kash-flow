@@ -361,7 +361,7 @@ export function AnalyticsPage() {
   const isAILoading = aiStatus === "queued" || aiStatus === "running";
 
   return (
-    <div className="finance-page">
+    <div className="finance-page analytics-page">
       {/* Header */}
       <PageHeader
         title="Laporan & Analisis AI"

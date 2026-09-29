@@ -33,7 +33,7 @@ import { Account } from "@/types/account";
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState("this_month");
-  const [viewMode, setViewMode] = useState<"bars" | "trend">("bars");
+  const [viewMode, setViewMode] = useState<"bars" | "trend">("trend");
   const [createOpen, setCreateOpen] = useState(false);
   const [reconcile, setReconcile] = useState<Account | null>(null);
   const accountsQuery = useQuery({
