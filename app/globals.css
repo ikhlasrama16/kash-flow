@@ -2004,6 +2004,57 @@ button:disabled {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
+@keyframes mobile-drawer-in {
+  from { opacity: .72; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes mobile-drawer-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: .72; transform: translateX(-24px); }
+}
+@keyframes drawer-backdrop-in {
+  from { background: rgb(0 0 0 / 0); backdrop-filter: blur(0); }
+  to { background: rgb(0 0 0 / .42); backdrop-filter: blur(3px); }
+}
+@keyframes drawer-backdrop-out {
+  from { background: rgb(0 0 0 / .42); backdrop-filter: blur(3px); }
+  to { background: rgb(0 0 0 / 0); backdrop-filter: blur(0); }
+}
+@keyframes drawer-item-in {
+  from { opacity: 0; transform: translateX(-7px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.navigation-dialog[open] {
+  box-shadow: 20px 0 55px rgb(0 0 0 / .16);
+  animation: mobile-drawer-in 240ms cubic-bezier(.22,.68,0,1) both;
+}
+.navigation-dialog[open]::backdrop {
+  background: rgb(0 0 0 / .42);
+  backdrop-filter: blur(3px);
+  animation: drawer-backdrop-in 240ms ease-out both;
+}
+.navigation-dialog[open].is-closing {
+  animation: mobile-drawer-out 180ms cubic-bezier(.4,0,1,1) both;
+}
+.navigation-dialog[open].is-closing::backdrop {
+  animation: drawer-backdrop-out 180ms ease-in both;
+}
+.navigation-dialog[open] .navigation-dialog-header,
+.navigation-dialog[open] .sidebar-links a,
+.navigation-dialog[open] > .text-action {
+  animation: drawer-item-in 260ms cubic-bezier(.22,.68,0,1) both;
+}
+.navigation-dialog[open] .sidebar-links a:nth-child(1) { animation-delay: 25ms; }
+.navigation-dialog[open] .sidebar-links a:nth-child(2) { animation-delay: 45ms; }
+.navigation-dialog[open] .sidebar-links a:nth-child(3) { animation-delay: 65ms; }
+.navigation-dialog[open] .sidebar-links a:nth-child(4) { animation-delay: 85ms; }
+.navigation-dialog[open] .sidebar-links a:nth-child(5) { animation-delay: 105ms; }
+.navigation-dialog[open] .sidebar-links a:nth-child(6) { animation-delay: 125ms; }
+.navigation-dialog[open] .sidebar-links a:nth-child(7) { animation-delay: 145ms; }
+.navigation-dialog[open].is-closing .navigation-dialog-header,
+.navigation-dialog[open].is-closing .sidebar-links a,
+.navigation-dialog[open].is-closing > .text-action { animation: none; }
+
 /* Ingest log follows the same finance surfaces, controls and spacing. */
 .notification-page { gap: 22px; }
 .notification-page .finance-header { align-items: center; }
